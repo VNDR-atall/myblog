@@ -1,0 +1,53 @@
+# Python 字节码和缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# 虚拟环境（包含 venv, env, 以及 Conda 可能放在项目内的环境）
+venv/
+env/
+ENV/
+.venv
+.env
+.conda/
+conda-env/
+myblog_env/
+
+# Conda 环境配置文件（如果放在项目内）
+environment.yml
+conda-requirements.txt
+
+# Flask 相关
+instance/
+.webassets-cache
+.flaskenv
+.env
+.flaskenv
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+# 上传文件（保留目录结构，但忽略具体文件）
+app/static/images/*
+!app/static/images/.gitkeep
+
+# 日志
+logs/
+*.log
+
+# 编辑器/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 项目临时文件
+*.bak
+*.tmp

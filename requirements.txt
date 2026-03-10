@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-WTF
+markdown
+Pygments  # 用于代码高亮
+python-dotenv  # 可选，用于加载环境变量
