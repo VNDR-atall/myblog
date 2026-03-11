@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}我的博客{% endblock %}</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('main.index') }}">首页</a>
+        <a href="{{ url_for('main.new_post') }}">新建文章</a>
+    </nav>
+    <main>
+        {% block content %}{% endblock content %}
+    </main>
+</body>
+</html>

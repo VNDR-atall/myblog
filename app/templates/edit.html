@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}新建文章 - 我的博客{% endblock title %}
+{% block content %}
+<h1>新建文章</h1>
+<form method="post">
+    <p>
+        <label for="title">标题：</label><br>
+        <input type="text" name="title" id="title" required size="50">
+    </p>
+    <p>
+        <label for="slug">URL标识（只能包含字母、数字和短横线）：</label><br>
+        <input type="text" name="slug" id="slug" required pattern="[a-z0-9-]+" title="只能包含小写字母、数字和短横线">
+    </p>
+    <p>
+        <label for="tags">标签（逗号分隔）：</label><br>
+        <input type="text" name="tags" id="tags" size="50">
+    </p>
+    <p>
+        <label for="summary">摘要：</label><br>
+        <textarea name="summary" id="summary" rows="3" cols="60"></textarea>
+    </p>
+    <p>
+        <label for="content">Markdown 内容：</label><br>
+        <textarea name="content" id="content" rows="15" cols="80"></textarea>
+    </p>
+    <p>
+        <button type="submit">保存</button>
+    </p>
+</form>
+{% endblock content %}
