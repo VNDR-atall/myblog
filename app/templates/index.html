@@ -1,17 +1,80 @@
 {% extends "base.html" %}
 {% block title %}首页 - 我的博客{% endblock title %}
 {% block content %}
+<style>
+    /* 文章列表样式 */
+    .post-list {
+        list-style: none;
+    }
+    
+    .post-item {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+    
+    .post-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .post-item h2 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-size: 1.3rem;
+        border-bottom: none;
+    }
+    
+    .post-item h2 a {
+        color: var(--secondary-color);
+        text-decoration: none;
+    }
+    
+    .post-item h2 a:hover {
+        color: var(--primary-color);
+    }
+    
+    .post-meta {
+        color: #777;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .post-summary {
+        margin-top: 1rem;
+        color: var(--text-color);
+    }
+    
+    .empty-state {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+    }
+</style>
 <h1>文章列表</h1>
 {% if posts %}
-    <ul>
+    <ul class="post-list">
     {% for post in posts %}
-        <li>
-            <a href="{{ url_for('main.post', slug=post.slug) }}">{{ post.title }}</a>
-            <small>{{ post.created_date.strftime('%Y-%m-%d') }}</small>
+        <li class="post-item">
+            <h2><a href="{{ url_for('main.post', slug=post.slug) }}">{{ post.title }}</a></h2>
+            <div class="post-meta">
+                <span>{{ post.created_date.strftime('%Y-%m-%d') }}</span>
+                {% if post.tags %}<span>· {{ post.tags }}</span>{% endif %}
+            </div>
+            {% if post.summary %}
+                <p class="post-summary">{{ post.summary }}</p>
+            {% endif %}
         </li>
     {% endfor %}
     </ul>
 {% else %}
-    <p>还没有任何文章，<a href="{{ url_for('main.new_post') }}">点击新建</a>。</p>
+    <div class="empty-state">
+        <p>还没有任何文章，<a href="{{ url_for('main.new_post') }}">点击新建</a>。</p>
+    </div>
 {% endif %}
 {% endblock content %}

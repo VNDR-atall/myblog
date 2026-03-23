@@ -1,14 +1,100 @@
 {% extends "base.html" %}
 {% block title %}{{ post.title }} - 我的博客{% endblock title %}
 {% block content %}
-<h1>{{ post.title }}</h1>
-<div class="post-meta">
-    <span>发布日期：{{ post.created_date.strftime('%Y-%m-%d') }}</span>
-    {% if post.tags %}<span>标签：{{ post.tags }}</span>{% endif %}
+<style>
+    /* 文章详情样式 */
+    .post-detail {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .post-detail .post-meta {
+        color: #777;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--gray);
+    }
+    
+    .post-detail .post-meta span {
+        margin-right: 1.5rem;
+    }
+    
+    .post-content {
+        margin: 2rem 0;
+        line-height: 1.8;
+    }
+    
+    .post-content h2 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .post-content p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .post-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--border-radius);
+        margin: 1.5rem 0;
+    }
+    
+    .post-content code {
+        background-color: var(--light-color);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    
+    .post-content pre {
+        background-color: var(--light-color);
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        overflow-x: auto;
+        margin: 1.5rem 0;
+    }
+    
+    .post-content pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+    
+    .post-content blockquote {
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1rem;
+        margin: 1.5rem 0;
+        font-style: italic;
+        color: #666;
+    }
+    
+    .back-link {
+        margin-top: 2rem;
+        display: inline-block;
+        background-color: var(--primary-color);
+        color: var(--white);
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+    }
+    
+    .back-link:hover {
+        background-color: #2980b9;
+        text-decoration: none;
+    }
+</style>
+<div class="post-detail">
+    <h1>{{ post.title }}</h1>
+    <div class="post-meta">
+        <span>发布日期：{{ post.created_date.strftime('%Y-%m-%d') }}</span>
+        {% if post.tags %}<span>标签：{{ post.tags }}</span>{% endif %}
+    </div>
+    <div class="post-content">
+        {{ content|safe }}
+    </div>
+    <a href="{{ url_for('main.index') }}" class="back-link">返回首页</a>
 </div>
-<hr>
-<div class="post-content">
-    {{ content|safe }}
-</div>
-<p><a href="{{ url_for('main.index') }}">返回首页</a></p>
 {% endblock content %}
