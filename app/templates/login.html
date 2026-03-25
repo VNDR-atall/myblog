@@ -1,5 +1,78 @@
 {% extends "base.html" %}
 {% block title %}登录 - 我的博客{% endblock title %}
 {% block content %}
-<h1>登录页面（待实现）</h1>
+<h1>管理员登录</h1>
+
+<div class="form-container" style="max-width: 520px;">
+    <form method="post">
+        {% if error %}
+            <p style="color: #c0392b; margin-bottom: 1rem;">{{ error }}</p>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="username">用户名：</label>
+            <input type="text" name="username" id="username" required autocomplete="username" />
+        </div>
+
+        <div class="form-group">
+            <label for="password">密码：</label>
+            <input type="password" name="password" id="password" required autocomplete="current-password" />
+        </div>
+
+        <button type="submit" class="submit-btn">登录</button>
+    </form>
+</div>
+
+<style>
+    .form-container {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--secondary-color);
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="password"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group input[type="password"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .submit-btn {
+        background-color: var(--primary-color);
+        color: var(--white);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .submit-btn:hover {
+        background-color: #2980b9;
+    }
+</style>
 {% endblock content %}

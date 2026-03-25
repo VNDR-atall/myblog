@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% block title %}新建文章 - 我的博客{% endblock title %}
+{% block title %}
+    {% if post %}
+        编辑文章 - 我的博客
+    {% else %}
+        新建文章 - 我的博客
+    {% endif %}
+{% endblock title %}
 {% block content %}
 <style>
     /* 表单样式 */
@@ -67,29 +73,60 @@
     }
 </style>
 <div class="form-container">
-    <h1>新建文章</h1>
-    <form method="post">
+    <h1>{% if post %}编辑文章{% else %}新建文章{% endif %}</h1>
+    {% if error %}
+        <p style="color: #c0392b; margin-bottom: 1rem;">{{ error }}</p>
+        <script>
+            // 弹窗提醒：避免用户只看到 internal server error 字样
+            window.addEventListener('load', () => { alert({{ error|tojson }}); });
+        </script>
+    {% endif %}
+
+    <form method="post"
+          onsubmit="return confirm('{% if post %}确认要保存修改（将覆盖原文）吗？{% else %}确认要保存新文章吗？{% endif %}');">
         <div class="form-group">
             <label for="title">标题：</label>
-            <input type="text" name="title" id="title" required size="50">
+            <input
+                type="text"
+                name="title"
+                id="title"
+                required
+                size="50"
+                value="{{ post.title if post else '' }}"
+            >
         </div>
         <div class="form-group">
-            <label for="slug">URL标识：</label>
-            <input type="text" name="slug" id="slug" required pattern="[a-z0-9-]+" title="只能包含小写字母、数字和短横线">
-            <small>只能包含字母、数字和短横线</small>
+            {% if post %}
+                <label>URL标识：</label>
+                <p style="color: #777; margin-top: 0.5rem;">
+                    {{ post.slug }}
+                </p>
+                <!-- slug 不允许修改：由 URL 决定 -->
+                <input type="hidden" name="slug" value="{{ post.slug }}">
+            {% else %}
+                <p style="color: #777; margin-top: 0.5rem;">
+                    URL 标识会根据标题自动生成（并确保唯一）。
+                </p>
+            {% endif %}
         </div>
         <div class="form-group">
             <label for="tags">标签：</label>
-            <input type="text" name="tags" id="tags" size="50">
+            <input
+                type="text"
+                name="tags"
+                id="tags"
+                size="50"
+                value="{{ post.tags if post else '' }}"
+            >
             <small>多个标签用逗号分隔</small>
         </div>
         <div class="form-group">
             <label for="summary">摘要：</label>
-            <textarea name="summary" id="summary" rows="3" cols="60"></textarea>
+            <textarea name="summary" id="summary" rows="3" cols="60">{{ post.summary if post else '' }}</textarea>
         </div>
         <div class="form-group">
             <label for="content">Markdown 内容：</label>
-            <textarea name="content" id="content" rows="15" cols="80"></textarea>
+            <textarea name="content" id="content" rows="15" cols="80" required>{{ content if content else '' }}</textarea>
         </div>
         <div class="form-group">
             <button type="submit" class="submit-btn">保存</button>

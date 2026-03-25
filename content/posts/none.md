@@ -1,0 +1,1 @@
+Hello everyone! This is VD's first blog.

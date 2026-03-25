@@ -69,6 +69,25 @@
             {% if post.summary %}
                 <p class="post-summary">{{ post.summary }}</p>
             {% endif %}
+
+            {% if session.get('admin_authenticated') %}
+                <div style="margin-top: 1rem;">
+                    <a
+                        href="{{ url_for('main.edit_post', slug=post.slug) }}"
+                        style="margin-right: 1rem;"
+                    >编辑</a>
+                    <form
+                        method="post"
+                        action="{{ url_for('main.delete_post', slug=post.slug) }}"
+                        style="display: inline;"
+                        onsubmit="return confirm('确定删除这篇文章吗？');"
+                    >
+                        <button type="submit" style="background: transparent; border: none; color: #c0392b; cursor: pointer;">
+                            删除
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
         </li>
     {% endfor %}
     </ul>

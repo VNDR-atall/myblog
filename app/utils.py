@@ -1,4 +1,5 @@
 import os
+import re
 import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
 from markdown.extensions.toc import TocExtension
@@ -35,3 +36,12 @@ def save_uploaded_file(file):
         file.save(filepath)
         return f'/static/images/{filename}'
     return None
+
+
+def slugify(text: str) -> str:
+    """把标题转换为 URL slug（用于文章路由/文件名）。"""
+    text = (text or "").strip().lower()
+    # 把非字母数字替换为连字符，再折叠重复连字符
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = re.sub(r"-{2,}", "-", text).strip("-")
+    return text or "post"

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from config import Config
@@ -19,5 +19,16 @@ def create_app(config_class=Config):
     # 注册蓝图（此处使用临时路由，后续可拆分）
     from app import routes
     app.register_blueprint(routes.bp)
+
+    @app.errorhandler(404)
+    def not_found(_e):
+        # 避免“偶发找不到正文文件”时展示 500
+        return render_template("error.html", message="页面未找到（可能是文章已删除或 slug 不存在）"), 404
+
+    @app.errorhandler(500)
+    def internal_error(_e):
+        # production 下把堆栈写入日志，前端给友好提示
+        app.logger.exception("Unhandled internal server error")
+        return render_template("error.html", message="服务器内部错误，请稍后再试。"), 500
 
     return app
