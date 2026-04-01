@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}
     {% if post %}
-        编辑文章 - 我的博客
+        编辑文章 - VNDR
     {% else %}
-        新建文章 - 我的博客
+        新建文章 - VNDR
     {% endif %}
 {% endblock title %}
 {% block content %}
@@ -126,11 +126,93 @@
         </div>
         <div class="form-group">
             <label for="content">Markdown 内容：</label>
+            <div style="display:flex; gap: 0.75rem; align-items: center; margin: 0.5rem 0 0.75rem;">
+                <input
+                    type="file"
+                    id="imageFile"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml"
+                />
+                <button
+                    type="button"
+                    id="uploadBtn"
+                    class="submit-btn"
+                    style="padding: 0.5rem 1rem;"
+                >上传并插入图片</button>
+                <span id="uploadStatus" style="color:#777; font-size:0.9rem;"></span>
+            </div>
             <textarea name="content" id="content" rows="15" cols="80" required>{{ content if content else '' }}</textarea>
+            <small style="margin-top: 0.5rem;">
+                支持插入图片：点击“上传并插入图片”后，会自动在光标位置插入 Markdown 语法 `![image](url)`。
+            </small>
         </div>
         <div class="form-group">
             <button type="submit" class="submit-btn">保存</button>
         </div>
     </form>
 </div>
+
+<script>
+    const uploadBtn = document.getElementById('uploadBtn');
+    const imageFile = document.getElementById('imageFile');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const contentTextarea = document.getElementById('content');
+
+    function insertAtCursor(textarea, text) {
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? textarea.value.length;
+        const before = textarea.value.slice(0, start);
+        const after = textarea.value.slice(end);
+        textarea.value = before + text + after;
+        const newPos = start + text.length;
+        textarea.focus();
+        textarea.setSelectionRange(newPos, newPos);
+    }
+
+    uploadBtn.addEventListener('click', async () => {
+        const file = imageFile.files && imageFile.files[0];
+        if (!file) {
+            alert('请先选择一张图片文件。');
+            return;
+        }
+
+        uploadBtn.disabled = true;
+        uploadStatus.textContent = '上传中...';
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const resp = await fetch('{{ url_for("main.upload_image") }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!resp.ok) {
+                // 未登录会返回 401 JSON
+                if (resp.status === 401) {
+                    alert('需要管理员登录后才能上传图片。');
+                    uploadStatus.textContent = '';
+                    return;
+                }
+                const text = await resp.text();
+                throw new Error(text || `upload failed: HTTP ${resp.status}`);
+            }
+
+            const data = await resp.json();
+            const url = data && data.location;
+            if (!url) throw new Error('upload failed: missing location');
+
+            const markdown = `\n![image](${url})\n`;
+            insertAtCursor(contentTextarea, markdown);
+            uploadStatus.textContent = '已插入图片链接。';
+        } catch (e) {
+            console.error(e);
+            alert('图片上传失败，请稍后重试。');
+            uploadStatus.textContent = '';
+        } finally {
+            uploadBtn.disabled = false;
+            // 允许连续上传不同文件：不强制清空选择
+        }
+    });
+</script>
 {% endblock content %}
