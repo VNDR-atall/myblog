@@ -1,5 +1,7 @@
 # VNDR Blog
 
+Hello everyone! Welcome to VD's personal blog website.
+
 `VNDR Blog` 是一个基于 Flask 的个人博客系统，支持游客浏览与管理员内容管理，正文使用 Markdown 存储并渲染。
 
 ## 功能概览
