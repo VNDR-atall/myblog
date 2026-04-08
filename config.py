@@ -20,5 +20,5 @@ class Config:
 
     # 固定管理员账号（仅单用户）
     # 生产/对外部署建议通过环境变量覆盖，避免明文默认值
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
-    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'admin'
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'adminVD'
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or '@Wtdlxwsmlm329'

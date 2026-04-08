@@ -9,15 +9,41 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 
 def render_markdown(content):
-    """将 Markdown 文本转换为 HTML，支持代码高亮和表格"""
+    """将 Markdown 文本转换为 HTML，支持代码高亮和表格，接近 Obsidian 渲染效果"""
+    # 自定义扩展配置
+    codehilite = CodeHiliteExtension(
+        linenums=False,
+        css_class='codehilite',
+        guess_lang=True,
+        use_pygments=True
+    )
+    
+    # 扩展列表
     extensions = [
-        CodeHiliteExtension(linenums=False),
+        codehilite,
         FencedCodeExtension(),
         TableExtension(),
-        TocExtension(),
-        'markdown.extensions.extra'   # 包含脚注、缩写等
+        TocExtension(toc_depth='2-6'),
+        'markdown.extensions.extra',   # 包含脚注、缩写等
+        'markdown.extensions.smarty',  # 智能引号
+        'markdown.extensions.nl2br'    # 换行转换为 <br>
     ]
-    return markdown.markdown(content, extensions=extensions)
+    
+    # 渲染选项
+    md = markdown.Markdown(
+        extensions=extensions,
+        output_format='html5',
+        tab_length=4
+    )
+    
+    # 处理 Obsidian 风格的任务列表
+    content = re.sub(r'^\s*-\s*\[ \]\s*(.*)$', r'- [ ] \1', content, flags=re.MULTILINE)
+    content = re.sub(r'^\s*-\s*\[x\]\s*(.*)$', r'- [x] \1', content, flags=re.MULTILINE)
+    
+    # 处理 Obsidian 风格的高亮
+    content = re.sub(r'==(.*?)==', r'<mark>\1</mark>', content)
+    
+    return md.convert(content)
 
 def allowed_file(filename):
     """检查文件扩展名是否允许上传"""

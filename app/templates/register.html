@@ -1,35 +1,39 @@
 {% extends "base.html" %}
-{% block title %}登录 - VNDR{% endblock title %}
+{% block title %}注册 - VNDR{% endblock title %}
 {% block content %}
-<h1>用户登录</h1>
+<h1>用户注册</h1>
 
 <div class="form-container" style="max-width: 520px;">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% if error %}
-            <p style="color: #c0392b; margin-bottom: 1rem;">
-                {% if error == "账户不存在，是否注册？" %}
-                    账户不存在，<a href="{{ url_for('main.register') }}" style="color: #3498db; text-decoration: underline;">是否注册？</a>
-                {% else %}
-                    {{ error }}
-                {% endif %}
-            </p>
+            <p style="color: #c0392b; margin-bottom: 1rem;">{{ error }}</p>
         {% endif %}
 
         <div class="form-group">
             <label for="username">用户名：</label>
             <input type="text" name="username" id="username" required autocomplete="username" />
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">用户名应在2-8个字符之间</small>
         </div>
 
         <div class="form-group">
             <label for="password">密码：</label>
-            <input type="password" name="password" id="password" required autocomplete="current-password" />
+            <input type="password" name="password" id="password" required autocomplete="new-password" />
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">密码应在6-20个字符之间，可包含数字、字母和符号</small>
         </div>
 
-        <button type="submit" class="submit-btn">登录</button>
+        <div class="form-group">
+            <label for="confirm_password">确认密码：</label>
+            <input type="password" name="confirm_password" id="confirm_password" required autocomplete="new-password" />
+        </div>
+
+        <div class="form-group">
+            <label for="avatar">头像（可选）：</label>
+            <input type="file" name="avatar" id="avatar" accept=".jpg,.png" />
+            <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">支持jpg、png格式，大小不超过2MB</small>
+        </div>
+
+        <button type="submit" class="submit-btn">注册</button>
     </form>
-    <div style="margin-top: 1rem; text-align: center;">
-        <a href="{{ url_for('main.admin_login') }}" style="font-size: 0.9rem; color: #7f8c8d;">管理员登录</a>
-    </div>
 </div>
 
 <style>

@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+{% block title %}个人中心 - VNDR{% endblock title %}
+{% block content %}
+<style>
+    .profile-container {
+        display: flex;
+        gap: 2rem;
+    }
+    
+    .sidebar {
+        flex: 0 0 200px;
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .sidebar h2 {
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 0.5rem;
+    }
+    
+    .sidebar ul {
+        list-style: none;
+    }
+    
+    .sidebar li {
+        margin-bottom: 1rem;
+    }
+    
+    .sidebar a {
+        display: block;
+        padding: 0.75rem;
+        border-radius: var(--border-radius);
+        color: var(--text-color);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+    
+    .sidebar a:hover,
+    .sidebar a.active {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+    
+    .main-content {
+        flex: 1;
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray);
+    }
+    
+    .avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--primary-color);
+    }
+    
+    .user-info h1 {
+        margin: 0;
+        font-size: 1.8rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--secondary-color);
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="file"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+    
+    .form-group input[type="text"]:focus,
+    .form-group input[type="password"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    
+    .submit-btn {
+        background-color: var(--primary-color);
+        color: var(--white);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .submit-btn:hover {
+        background-color: #2980b9;
+    }
+    
+    .comment-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray);
+    }
+    
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+    
+    .comment-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        color: #777;
+        font-size: 0.9rem;
+    }
+    
+    .comment-content {
+        margin-bottom: 1rem;
+    }
+    
+    .delete-btn {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .delete-btn:hover {
+        background-color: #c0392b;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-container {
+            flex-direction: column;
+        }
+        
+        .sidebar {
+            flex: 1;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- 侧边导航栏 -->
+    <div class="sidebar">
+        <h2>个人中心</h2>
+        <ul>
+            <li><a href="{{ url_for('main.user_profile') }}" class="active">基本信息</a></li>
+            <li><a href="{{ url_for('main.user_comments') }}">评论管理</a></li>
+        </ul>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 个人信息头部 -->
+        <div class="profile-header">
+            {% if session.get('avatar') %}
+                <img src="{{ url_for('static', filename='images/avatars/' ~ session.avatar) }}" class="avatar" alt="头像">
+            {% else %}
+                <div class="avatar" style="background-color: #3498db; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">{{ session.username[0] }}</div>
+            {% endif %}
+            <div class="user-info">
+                <h1>{{ session.username }}</h1>
+                <p>用户ID: {{ session.username }}</p>
+            </div>
+        </div>
+        
+        <!-- 基本信息表单 -->
+        <h2>基本信息</h2>
+        {% if error %}
+            <p style="color: #c0392b; margin-bottom: 1rem;">{{ error }}</p>
+        {% endif %}
+        {% if success %}
+            <p style="color: #27ae60; margin-bottom: 1rem;">{{ success }}</p>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="username">用户名：</label>
+                <input type="text" name="username" id="username" value="{{ session.username }}" disabled>
+                <button type="button" class="submit-btn" onclick="openUsernameModal()" style="margin-top: 0.5rem;">修改用户名</button>
+                <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">用户名7天内只能修改一次</small>
+            </div>
+            
+            <div class="form-group">
+                <label>修改密码：</label>
+                <button type="button" class="submit-btn" onclick="openPasswordModal()">修改密码</button>
+                <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">密码7天内只能修改一次</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="avatar">修改头像：</label>
+                <input type="file" name="avatar" id="avatar" accept=".jpg,.png">
+                <small style="color: #7f8c8d; display: block; margin-top: 0.25rem;">支持jpg、png格式，大小不超过2MB</small>
+            </div>
+            
+            <button type="submit" class="submit-btn">保存修改</button>
+        </form>
+        
+        <!-- 密码修改浮窗 -->
+        <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 400px;">
+                <h3>修改密码</h3>
+                <div style="margin-top: 1.5rem;">
+                    <div class="form-group">
+                        <label for="newPassword">新密码：</label>
+                        <input type="password" id="newPassword" placeholder="请输入新密码" style="width: 100%; padding: 0.75rem; border: 1px solid var(--gray); border-radius: var(--border-radius); font-size: 1rem;">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">确认密码：</label>
+                        <input type="password" id="confirmPassword" placeholder="请再次输入新密码" style="width: 100%; padding: 0.75rem; border: 1px solid var(--gray); border-radius: var(--border-radius); font-size: 1rem;">
+                        <p id="passwordError" style="color: #c0392b; margin-top: 0.5rem; display: none;">前后密码不一致</p>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                        <button type="button" onclick="closePasswordModal()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--gray); border-radius: var(--border-radius); background-color: white; cursor: pointer;">取消</button>
+                        <button type="button" onclick="checkPassword()" style="padding: 0.75rem 1.5rem; border: none; border-radius: var(--border-radius); background-color: var(--primary-color); color: white; cursor: pointer;">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 确认修改浮窗 -->
+        <div id="confirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1001;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 400px;">
+                <h3>确认修改</h3>
+                <p style="margin: 1.5rem 0;">确定修改为新密码吗？</p>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeConfirmModal()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--gray); border-radius: var(--border-radius); background-color: white; cursor: pointer;">取消</button>
+                    <button type="button" onclick="confirmPasswordChange()" style="padding: 0.75rem 1.5rem; border: none; border-radius: var(--border-radius); background-color: var(--primary-color); color: white; cursor: pointer;">确定</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成功提示浮窗 -->
+        <div id="successModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1002;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 400px; text-align: center;">
+                <h3>操作成功</h3>
+                <p id="successMessage" style="margin: 1.5rem 0;">操作成功！</p>
+            </div>
+        </div>
+        
+        <!-- 用户名修改浮窗 -->
+        <div id="usernameModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 400px;">
+                <h3>修改用户名</h3>
+                <div style="margin-top: 1.5rem;">
+                    <div class="form-group">
+                        <label for="newUsername">新用户名：</label>
+                        <input type="text" id="newUsername" placeholder="请输入新用户名" style="width: 100%; padding: 0.75rem; border: 1px solid var(--gray); border-radius: var(--border-radius); font-size: 1rem;">
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                        <button type="button" onclick="closeUsernameModal()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--gray); border-radius: var(--border-radius); background-color: white; cursor: pointer;">取消</button>
+                        <button type="button" onclick="checkUsername()" style="padding: 0.75rem 1.5rem; border: none; border-radius: var(--border-radius); background-color: var(--primary-color); color: white; cursor: pointer;">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 确认修改浮窗 -->
+        <div id="usernameConfirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1001;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 400px;">
+                <h3>确认修改</h3>
+                <p style="margin: 1.5rem 0;">确定修改为新用户名吗？</p>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeUsernameConfirmModal()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--gray); border-radius: var(--border-radius); background-color: white; cursor: pointer;">取消</button>
+                    <button type="button" onclick="confirmUsernameChange()" style="padding: 0.75rem 1.5rem; border: none; border-radius: var(--border-radius); background-color: var(--primary-color); color: white; cursor: pointer;">确定</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 时间限制提示浮窗 -->
+        <div id="timeLimitModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1003;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 400px; text-align: center;">
+                <h3>操作限制</h3>
+                <p id="timeLimitMessage" style="margin: 1.5rem 0;">你已在7天内修改过密码/账户名</p>
+                <button type="button" onclick="closeTimeLimitModal()" style="padding: 0.75rem 1.5rem; border: none; border-radius: var(--border-radius); background-color: var(--primary-color); color: white; cursor: pointer;">确定</button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--gray);">
+            <h3>账号管理</h3>
+            <button class="delete-btn" onclick="if(confirm('确定要注销账号吗？此操作不可恢复！')) { location.href='{{ url_for('main.delete_account') }}'; }">注销账号</button>
+            <button class="submit-btn" style="margin-top: 1rem;" onclick="if(confirm('确定要退出登录吗？')) { location.href='{{ url_for('main.logout') }}'; }">退出登录</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 打开密码修改浮窗
+    function openPasswordModal() {
+        document.getElementById('passwordModal').style.display = 'block';
+    }
+    
+    // 关闭密码修改浮窗
+    function closePasswordModal() {
+        document.getElementById('passwordModal').style.display = 'none';
+        document.getElementById('passwordError').style.display = 'none';
+    }
+    
+    // 关闭确认修改浮窗
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+    }
+    
+    // 检查密码是否一致
+    function checkPassword() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const passwordError = document.getElementById('passwordError');
+        
+        if (newPassword !== confirmPassword) {
+            passwordError.style.display = 'block';
+        } else {
+            passwordError.style.display = 'none';
+            // 打开确认修改浮窗
+            document.getElementById('confirmModal').style.display = 'block';
+        }
+    }
+    
+    // 确认密码修改
+    function confirmPasswordChange() {
+        // 关闭确认浮窗
+        document.getElementById('confirmModal').style.display = 'none';
+        // 关闭密码修改浮窗
+        document.getElementById('passwordModal').style.display = 'none';
+        // 打开成功提示浮窗
+        document.getElementById('successModal').style.display = 'block';
+        // 1秒后关闭成功浮窗
+        setTimeout(function() {
+            document.getElementById('successModal').style.display = 'none';
+        }, 1000);
+    }
+    
+    // 打开用户名修改浮窗
+    function openUsernameModal() {
+        // 检查是否在7天内修改过用户名
+        const lastUsernameChange = localStorage.getItem('lastUsernameChange');
+        const now = new Date().getTime();
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        
+        if (lastUsernameChange && (now - lastUsernameChange) < sevenDays) {
+            document.getElementById('timeLimitMessage').textContent = '你已在7天内修改过账户名';
+            document.getElementById('timeLimitModal').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('usernameModal').style.display = 'block';
+    }
+    
+    // 关闭用户名修改浮窗
+    function closeUsernameModal() {
+        document.getElementById('usernameModal').style.display = 'none';
+    }
+    
+    // 关闭用户名确认浮窗
+    function closeUsernameConfirmModal() {
+        document.getElementById('usernameConfirmModal').style.display = 'none';
+    }
+    
+    // 关闭时间限制提示浮窗
+    function closeTimeLimitModal() {
+        document.getElementById('timeLimitModal').style.display = 'none';
+    }
+    
+    // 检查用户名
+    function checkUsername() {
+        const newUsername = document.getElementById('newUsername').value.trim();
+        
+        // 验证用户名长度
+        if (newUsername.length < 2 || newUsername.length > 8) {
+            alert('用户名长度应在2-8个字符之间');
+            return;
+        }
+        
+        // 打开确认修改浮窗
+        document.getElementById('usernameConfirmModal').style.display = 'block';
+    }
+    
+    // 确认用户名修改
+    function confirmUsernameChange() {
+        // 关闭确认浮窗
+        document.getElementById('usernameConfirmModal').style.display = 'none';
+        // 关闭用户名修改浮窗
+        document.getElementById('usernameModal').style.display = 'none';
+        // 记录修改时间
+        localStorage.setItem('lastUsernameChange', new Date().getTime());
+        // 打开成功提示浮窗
+        document.getElementById('successMessage').textContent = '用户名修改成功！';
+        document.getElementById('successModal').style.display = 'block';
+        // 1秒后关闭成功浮窗
+        setTimeout(function() {
+            document.getElementById('successModal').style.display = 'none';
+        }, 1000);
+    }
+    
+    // 检查密码修改时间限制
+    function openPasswordModal() {
+        // 检查是否在7天内修改过密码
+        const lastPasswordChange = localStorage.getItem('lastPasswordChange');
+        const now = new Date().getTime();
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        
+        if (lastPasswordChange && (now - lastPasswordChange) < sevenDays) {
+            document.getElementById('timeLimitMessage').textContent = '你已在7天内修改过密码';
+            document.getElementById('timeLimitModal').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('passwordModal').style.display = 'block';
+    }
+    
+    // 确认密码修改
+    function confirmPasswordChange() {
+        // 关闭确认浮窗
+        document.getElementById('confirmModal').style.display = 'none';
+        // 关闭密码修改浮窗
+        document.getElementById('passwordModal').style.display = 'none';
+        // 记录修改时间
+        localStorage.setItem('lastPasswordChange', new Date().getTime());
+        // 打开成功提示浮窗
+        document.getElementById('successMessage').textContent = '密码修改成功！';
+        document.getElementById('successModal').style.display = 'block';
+        // 1秒后关闭成功浮窗
+        setTimeout(function() {
+            document.getElementById('successModal').style.display = 'none';
+        }, 1000);
+    }
+    
+    // 点击浮窗外区域关闭浮窗
+    window.onclick = function(event) {
+        const passwordModal = document.getElementById('passwordModal');
+        const confirmModal = document.getElementById('confirmModal');
+        const successModal = document.getElementById('successModal');
+        const usernameModal = document.getElementById('usernameModal');
+        const usernameConfirmModal = document.getElementById('usernameConfirmModal');
+        const timeLimitModal = document.getElementById('timeLimitModal');
+        
+        if (event.target === passwordModal) {
+            passwordModal.style.display = 'none';
+            document.getElementById('passwordError').style.display = 'none';
+        }
+        if (event.target === confirmModal) {
+            confirmModal.style.display = 'none';
+        }
+        if (event.target === successModal) {
+            successModal.style.display = 'none';
+        }
+        if (event.target === usernameModal) {
+            usernameModal.style.display = 'none';
+        }
+        if (event.target === usernameConfirmModal) {
+            usernameConfirmModal.style.display = 'none';
+        }
+        if (event.target === timeLimitModal) {
+            timeLimitModal.style.display = 'none';
+        }
+    }
+</script>
+{% endblock content %}

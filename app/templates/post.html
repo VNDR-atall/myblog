@@ -71,6 +71,53 @@
         color: #666;
     }
     
+    /* Obsidian 风格的任务列表 */
+    .post-content ul li input[type="checkbox"] {
+        margin-right: 0.5rem;
+    }
+    
+    /* Obsidian 风格的高亮 */
+    .post-content mark {
+        background-color: #ffeb3b;
+        padding: 0.1rem 0.2rem;
+        border-radius: 3px;
+    }
+    
+    /* Obsidian 风格的代码块 */
+    .post-content .codehilite {
+        background-color: #f6f8fa;
+        border-radius: 6px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        overflow-x: auto;
+    }
+    
+    .post-content .codehilite pre {
+        margin: 0;
+        background-color: transparent;
+        border: none;
+        padding: 0;
+    }
+    
+    /* Obsidian 风格的表格 */
+    .post-content table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1.5rem 0;
+    }
+    
+    .post-content table th,
+    .post-content table td {
+        border: 1px solid #ddd;
+        padding: 0.75rem;
+        text-align: left;
+    }
+    
+    .post-content table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    
     .back-link {
         margin-top: 2rem;
         display: inline-block;
@@ -97,4 +144,161 @@
     </div>
     <a href="{{ url_for('main.index') }}" class="back-link">返回首页</a>
 </div>
+
+<!-- 评论区 -->
+<div style="margin-top: 3rem;">
+    <div class="comment-section">
+        <h2>评论</h2>
+        
+        <!-- 评论表单 -->
+        {% if session.get('user_authenticated') %}
+            <div class="comment-form">
+                <form method="post" action="{{ url_for('main.add_comment', slug=post.slug) }}">
+                    <div class="form-group">
+                        <label for="comment-content">发表评论：</label>
+                        <textarea name="content" id="comment-content" rows="4" placeholder="请输入评论内容（2-100字）" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">提交评论</button>
+                </form>
+            </div>
+        {% else %}
+            <p>请<a href="{{ url_for('main.login') }}">登录</a>后发表评论</p>
+        {% endif %}
+        
+        <!-- 评论列表 -->
+        <div class="comments-list">
+            {% if post.comments %}
+                {% for comment in post.comments %}
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            {% if comment.avatar %}
+                                <img src="{{ url_for('static', filename='images/avatars/' ~ comment.avatar) }}" class="comment-avatar" alt="头像">
+                            {% else %}
+                                <div class="comment-avatar" style="background-color: #3498db; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">{{ comment.username[0] }}</div>
+                            {% endif %}
+                            <div class="comment-meta">
+                                <span class="comment-username">{{ comment.username }}</span>
+                                <span class="comment-time">{{ comment.created_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                        </div>
+                        <div class="comment-content">
+                            {{ comment.content }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>暂无评论，快来发表第一条评论吧！</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 评论区样式 */
+    .comment-section {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .comment-section h2 {
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 0.5rem;
+    }
+    
+    .comment-form {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--gray);
+    }
+    
+    .comment-form .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .comment-form label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--secondary-color);
+    }
+    
+    .comment-form textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .comment-form textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+    
+    .comment-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray);
+        margin-bottom: 1rem;
+    }
+    
+    .comment-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .comment-meta {
+        flex: 1;
+    }
+    
+    .comment-username {
+        font-weight: 500;
+        color: var(--secondary-color);
+        margin-right: 1rem;
+    }
+    
+    .comment-time {
+        font-size: 0.9rem;
+        color: #777;
+    }
+    
+    .comment-content {
+        line-height: 1.6;
+    }
+    
+    .submit-btn {
+        background-color: var(--primary-color);
+        color: var(--white);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .submit-btn:hover {
+        background-color: #2980b9;
+    }
+</style>
 {% endblock content %}

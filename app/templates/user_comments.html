@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}评论管理 - VNDR{% endblock title %}
+{% block content %}
+<style>
+    .profile-container {
+        display: flex;
+        gap: 2rem;
+    }
+    
+    .sidebar {
+        flex: 0 0 200px;
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .sidebar h2 {
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 0.5rem;
+    }
+    
+    .sidebar ul {
+        list-style: none;
+    }
+    
+    .sidebar li {
+        margin-bottom: 1rem;
+    }
+    
+    .sidebar a {
+        display: block;
+        padding: 0.75rem;
+        border-radius: var(--border-radius);
+        color: var(--text-color);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+    
+    .sidebar a:hover,
+    .sidebar a.active {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+    
+    .main-content {
+        flex: 1;
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .comment-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray);
+    }
+    
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+    
+    .comment-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        color: #777;
+        font-size: 0.9rem;
+    }
+    
+    .comment-content {
+        margin-bottom: 1rem;
+    }
+    
+    .delete-btn {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .delete-btn:hover {
+        background-color: #c0392b;
+    }
+    
+    .post-link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .post-link:hover {
+        text-decoration: underline;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #777;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-container {
+            flex-direction: column;
+        }
+        
+        .sidebar {
+            flex: 1;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- 侧边导航栏 -->
+    <div class="sidebar">
+        <h2>个人中心</h2>
+        <ul>
+            <li><a href="{{ url_for('main.user_profile') }}">基本信息</a></li>
+            <li><a href="{{ url_for('main.user_comments') }}" class="active">评论管理</a></li>
+        </ul>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <h2>我的评论</h2>
+        
+        {% if comments %}
+            {% for comment in comments %}
+                <div class="comment-item">
+                    <div class="comment-meta">
+                        <span>评论于：<a href="#" class="post-link">{{ comment.post_title }}</a></span>
+                        <span>{{ comment.created_at }}</span>
+                    </div>
+                    <div class="comment-content">
+                        {{ comment.content }}
+                    </div>
+                    <button class="delete-btn" onclick="if(confirm('是否确认删除此条评论？')) { /* 执行删除操作 */ }">删除</button>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>您还没有发表过评论</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}

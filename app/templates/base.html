@@ -149,9 +149,22 @@
             <a href="{{ url_for('main.index') }}" class="logo">VNDR</a>
             <ul>
                 <li><a href="{{ url_for('main.index') }}">首页</a></li>
-                <li><a href="{{ url_for('main.new_post') }}">新建文章</a></li>
                 {% if session.get('admin_authenticated') %}
-                    <li><a href="{{ url_for('main.logout') }}">退出登录</a></li>
+                    <li><a href="{{ url_for('main.new_post') }}">新建文章</a></li>
+                {% elif session.get('user_authenticated') %}
+                    <li>
+                        <a href="{{ url_for('main.user_profile') }}" style="display: flex; align-items: center; gap: 0.5rem;">
+                            {% if session.get('avatar') %}
+                                <img src="{{ url_for('static', filename='images/avatars/' ~ session.avatar) }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" alt="头像">
+                            {% else %}
+                                <div style="width: 24px; height: 24px; border-radius: 50%; background-color: #3498db; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">{{ session.username[0] }}</div>
+                            {% endif %}
+                            {{ session.username }}
+                        </a>
+                    </li>
+                {% else %}
+                    <li><a href="{{ url_for('main.login') }}">登录</a></li>
+                    <li><a href="{{ url_for('main.register') }}">注册</a></li>
                 {% endif %}
             </ul>
         </div>

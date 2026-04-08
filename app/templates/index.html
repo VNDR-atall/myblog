@@ -55,8 +55,60 @@
         text-align: center;
         box-shadow: var(--shadow);
     }
+    
+    /* 文件夹导航样式 */
+    .folder-nav {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .folder-nav ul {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .folder-nav li {
+        margin: 0;
+    }
+    
+    .folder-nav a {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        background-color: var(--light-color);
+        color: var(--text-color);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+    
+    .folder-nav a:hover {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
+    
+    .folder-nav a.active {
+        background-color: var(--primary-color);
+        color: var(--white);
+    }
 </style>
 <h1>文章列表</h1>
+
+<!-- 文件夹导航 -->
+{% if folders %}
+    <div class="folder-nav">
+        <ul>
+            <li><a href="{{ url_for('main.index') }}" {% if not current_folder_id %}class="active"{% endif %}>全部</a></li>
+            {% for folder in folders %}
+                <li><a href="{{ url_for('main.index', folder=folder.id) }}" {% if current_folder_id == folder.id|string %}class="active"{% endif %}>{{ folder.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
 {% if posts %}
     <ul class="post-list">
     {% for post in posts %}
@@ -64,7 +116,7 @@
             <h2><a href="{{ url_for('main.post', slug=post.slug) }}">{{ post.title }}</a></h2>
             <div class="post-meta">
                 <span>{{ post.created_date.strftime('%Y-%m-%d') }}</span>
-                {% if post.tags %}<span>· {{ post.tags }}</span>{% endif %}
+                {% if post.folder %}<span>· {{ post.folder.name }}</span>{% endif %}
             </div>
             {% if post.summary %}
                 <p class="post-summary">{{ post.summary }}</p>
