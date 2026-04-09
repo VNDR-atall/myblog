@@ -5,7 +5,7 @@ __pycache__/
 *.pyd
 .python-version
 
-# 虚拟环境（包含 venv, env, 以及 Conda 可能放在项目内的环境）
+# 虚拟环境
 venv/
 env/
 ENV/
@@ -15,26 +15,26 @@ ENV/
 conda-env/
 myblog_env/
 
-# Conda 环境配置文件（如果放在项目内）
+# Conda 环境配置文件
 environment.yml
 conda-requirements.txt
 
 # Flask 相关
-instance/
+instance/                # 整个 instance 目录忽略（包含所有数据库文件）
 .webassets-cache
 .flaskenv
-.env
-.flaskenv
 
-# 数据库
+# 数据库（双重保险）
 *.db
 *.sqlite
 *.sqlite3
 *.sqlite-journal
 
-# 上传文件（保留目录结构，但忽略具体文件）
+# 上传文件（保留目录结构，忽略具体文件）
 app/static/images/*
 !app/static/images/.gitkeep
+app/static/images/avatars/*
+!app/static/images/avatars/.gitkeep
 
 # 日志
 logs/
@@ -51,3 +51,6 @@ Thumbs.db
 # 项目临时文件
 *.bak
 *.tmp
+
+# 本地测试数据（额外）
+test.db
