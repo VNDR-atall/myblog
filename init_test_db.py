@@ -25,69 +25,109 @@ with app.app_context():
     db.create_all()
     print("创建数据库表结构")
     
+    # 创建"全部"文件夹
+    all_folder = Folder(name="全部", is_all_folder=True)
+    db.session.add(all_folder)
+    
     # 创建默认文件夹
-    folder_names = ["欢迎", "日常", "项目"]
-    for folder_name in folder_names:
-        # 检查文件夹是否已存在
-        existing_folder = Folder.query.filter_by(name=folder_name).first()
-        if not existing_folder:
-            folder = Folder(name=folder_name)
-            db.session.add(folder)
+    folder1 = Folder(name="技术笔记")
+    folder2 = Folder(name="日常记录")
+    folder3 = Folder(name="项目文档")
+    
+    # 创建嵌套文件夹
+    folder3_1 = Folder(name="设计文档", parent=folder3)
+    folder3_2 = Folder(name="开发文档", parent=folder3)
+    
+    db.session.add(folder1)
+    db.session.add(folder2)
+    db.session.add(folder3)
+    db.session.add(folder3_1)
+    db.session.add(folder3_2)
     
     # 创建测试文章
-    posts = [
-        Post(
-            title="欢迎来到我的博客",
-            slug="welcome-to-my-blog",
-            summary="这是我的第一篇博客文章，欢迎大家访问！",
-            filename="welcome-to-my-blog.md",
-            folder_id=1
-        ),
-        Post(
-            title="日常记录",
-            slug="daily-record",
-            summary="记录日常生活中的点点滴滴",
-            filename="daily-record.md",
-            folder_id=2
-        ),
-        Post(
-            title="项目开发笔记",
-            slug="project-notes",
-            summary="项目开发过程中的技术笔记",
-            filename="project-notes.md",
-            folder_id=3
-        )
-    ]
-    for post in posts:
-        db.session.add(post)
+    post1 = Post(
+        title="Flask入门教程",
+        slug="flask-introduction",
+        summary="介绍Flask框架的基本使用",
+        filename="flask-introduction.md",
+        folder=folder1
+    )
+    
+    post2 = Post(
+        title="今天天气真好",
+        slug="nice-weather",
+        summary="记录今天的天气和心情",
+        filename="nice-weather.md",
+        folder=folder2
+    )
+    
+    post3 = Post(
+        title="项目架构设计",
+        slug="project-architecture",
+        summary="项目的整体架构设计文档",
+        filename="project-architecture.md",
+        folder=folder3_1
+    )
+    
+    post4 = Post(
+        title="开发规范",
+        slug="development-standards",
+        summary="团队开发规范文档",
+        filename="development-standards.md",
+        folder=folder3_2
+    )
+    
+    post5 = Post(
+        title="无分类文章",
+        slug="uncategorized-post",
+        summary="没有分类的文章",
+        filename="uncategorized-post.md"
+    )
+    
+    db.session.add(post1)
+    db.session.add(post2)
+    db.session.add(post3)
+    db.session.add(post4)
+    db.session.add(post5)
     
     # 创建测试评论
-    comments = [
-        Comment(
-            content="这篇文章写得真好！",
-            username="testuser1",
-            post_id=1
-        ),
-        Comment(
-            content="感谢分享！",
-            username="testuser2",
-            post_id=1
-        ),
-        Comment(
-            content="期待更多内容！",
-            username="testuser1",
-            post_id=2
-        )
-    ]
-    for comment in comments:
-        db.session.add(comment)
+    comment1 = Comment(
+        content="写得太好了！学到了很多",
+        username="testuser1",
+        post=post1
+    )
+    
+    comment2 = Comment(
+        content="期待更多内容",
+        username="testuser2",
+        post=post1
+    )
+    
+    comment3 = Comment(
+        content="记录得很详细",
+        username="testuser1",
+        post=post2
+    )
+    
+    db.session.add(comment1)
+    db.session.add(comment2)
+    db.session.add(comment3)
     
     # 提交所有更改
     db.session.commit()
     print("测试数据创建完成")
-    print(f"测试数据库已创建：{test_db_path}")
-    print("测试用户：testuser1, testuser2")
-    print("测试文章：3篇")
+    print("测试数据库已创建：test.db")
+    print("\n测试文件夹结构：")
+    print("  - 全部")
+    print("    - 技术笔记")
+    print("    - 日常记录")
+    print("    - 项目文档")
+    print("      - 设计文档")
+    print("      - 开发文档")
+    print("\n测试文章：5篇")
     print("测试评论：3条")
 
-print("测试数据库初始化完成！")
+print("\n测试数据库初始化完成！")
+print("\n使用测试数据库的方法：")
+print("1. 修改 config.py 中的 DATABASE = 'test.db'")
+print("2. 或者设置环境变量 export DATABASE=test.db")

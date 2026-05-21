@@ -138,6 +138,7 @@
     <div class="post-meta">
         <span>发布日期：{{ post.created_date.strftime('%Y-%m-%d') }}</span>
         {% if post.tags %}<span>标签：{{ post.tags }}</span>{% endif %}
+        <span>归属：{% if post.folder %}{{ post.get_location() }}{% else %}无{% endif %}</span>
     </div>
     <div class="post-content">
         {{ content|safe }}

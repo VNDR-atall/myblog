@@ -31,13 +31,18 @@ def index():
     # 根据文件夹筛选文章
     if folder_id:
         posts = Post.query.filter_by(folder_id=folder_id).order_by(Post.created_date.desc()).all()
+        current_folder = Folder.query.get(folder_id)
     else:
         posts = Post.query.order_by(Post.created_date.desc()).all()
+        current_folder = None
     
-    # 获取所有文件夹
-    folders = Folder.query.all()
+    # 只获取一级文件夹（parent_id为None且不是all_folder）
+    folders = Folder.query.filter_by(parent_id=None, is_all_folder=False).order_by(Folder.name).all()
     
-    return render_template('index.html', posts=posts, folders=folders, current_folder_id=folder_id)
+    # 获取"全部"文件夹
+    all_folder = Folder.query.filter_by(is_all_folder=True).first()
+    
+    return render_template('index.html', posts=posts, folders=folders, current_folder_id=folder_id, all_folder=all_folder, current_folder=current_folder)
 
 @bp.route('/post/<slug>')
 def post(slug):
@@ -454,3 +459,260 @@ def register():
                 return redirect(url_for("main.index"))
 
     return render_template("register.html", error=error)
+
+# ==================== 文件夹管理系统 ====================
+
+# 确保"全部"文件夹存在
+def ensure_all_folder_exists():
+    """确保'全部'文件夹存在"""
+    all_folder = Folder.query.filter_by(is_all_folder=True).first()
+    if not all_folder:
+        all_folder = Folder(name='全部', is_all_folder=True)
+        db.session.add(all_folder)
+        db.session.commit()
+    return all_folder
+
+def validate_folder_name(name):
+    """验证文件夹名称"""
+    import re
+    if not name or len(name) == 0 or len(name) > 50:
+        return False
+    # 允许中文、英文、数字、下划线、短横线
+    if not re.match(r'^[\u4e00-\u9fa5a-zA-Z0-9_-]+$', name):
+        return False
+    return True
+
+def get_all_folders():
+    """获取所有文件夹（除了'全部'）"""
+    return Folder.query.filter_by(is_all_folder=False).all()
+
+def get_folder_tree():
+    """获取文件夹树结构"""
+    def build_tree(parent_id=None):
+        folders = Folder.query.filter_by(parent_id=parent_id, is_all_folder=False).all()
+        tree = []
+        for folder in folders:
+            node = {
+                'id': folder.id,
+                'name': folder.name,
+                'children': build_tree(folder.id)
+            }
+            tree.append(node)
+        return tree
+    return build_tree()
+
+def can_move_folder_to(folder, target_folder_id):
+    """检查文件夹是否可以移动到目标位置"""
+    if not target_folder_id:
+        return True
+    # 检查是否会导致循环引用
+    def is_descendant(target):
+        current = target
+        while current:
+            if current.id == folder.id:
+                return True
+            current = current.parent
+        return False
+    target_folder = Folder.query.get(target_folder_id)
+    return not is_descendant(target_folder)
+
+@bp.route('/file-manager')
+@admin_required
+def file_manager():
+    """文件管理器主页面"""
+    ensure_all_folder_exists()
+    
+    folder_id = request.args.get('folder_id', type=int)
+    search_query = request.args.get('search', '').strip()
+    
+    # 获取当前文件夹
+    current_folder = None
+    if folder_id:
+        current_folder = Folder.query.get(folder_id)
+    all_folder = Folder.query.filter_by(is_all_folder=True).first()
+    
+    # 获取子文件夹和文章
+    if search_query:
+        # 搜索模式：在所有文件夹中搜索
+        folders = []
+        posts = Post.query.filter(Post.title.contains(search_query)).order_by(Post.created_date.desc()).all()
+    else:
+        if current_folder:
+            # 在指定文件夹中
+            folders = Folder.query.filter_by(parent_id=current_folder.id, is_all_folder=False).order_by(Folder.name).all()
+            posts = current_folder.posts
+        else:
+            # 在根目录（全部）：显示所有文章
+            folders = Folder.query.filter_by(parent_id=None, is_all_folder=False).order_by(Folder.name).all()
+            posts = Post.query.order_by(Post.created_date.desc()).all()
+    
+    # 获取面包屑导航
+    breadcrumbs = []
+    if current_folder and not current_folder.is_all_folder:
+        temp = current_folder
+        while temp:
+            breadcrumbs.insert(0, {'id': temp.id, 'name': temp.name})
+            temp = temp.parent
+    
+    # 获取文件夹树（用于侧边栏）
+    folder_tree = get_folder_tree()
+    
+    return render_template('file_manager.html', 
+                         folders=folders, 
+                         posts=posts, 
+                         current_folder=current_folder,
+                         all_folder=all_folder,
+                         breadcrumbs=breadcrumbs,
+                         folder_tree=folder_tree,
+                         search_query=search_query)
+
+@bp.route('/folder/create', methods=['POST'])
+@admin_required
+def create_folder():
+    """创建文件夹"""
+    parent_id = request.form.get('parent_id', type=int)
+    name = request.form.get('name', '').strip()
+    
+    # 验证名称
+    if not validate_folder_name(name):
+        return {'success': False, 'message': '文件夹名称无效，只能包含中文、英文、数字、下划线、短横线，长度1-50个字符'}, 400
+    
+    # 检查同一父文件夹下名称是否重复
+    if Folder.query.filter_by(parent_id=parent_id, name=name, is_all_folder=False).first():
+        return {'success': False, 'message': '该文件夹名称已存在'}, 400
+    
+    folder = Folder(name=name, parent_id=parent_id)
+    db.session.add(folder)
+    db.session.commit()
+    
+    return {'success': True, 'folder_id': folder.id, 'message': '文件夹创建成功'}
+
+@bp.route('/folder/rename', methods=['POST'])
+@admin_required
+def rename_folder():
+    """重命名文件夹"""
+    folder_id = request.form.get('folder_id', type=int)
+    new_name = request.form.get('name', '').strip()
+    
+    folder = Folder.query.get(folder_id)
+    if not folder or folder.is_all_folder:
+        return {'success': False, 'message': '文件夹不存在'}, 404
+    
+    # 验证名称
+    if not validate_folder_name(new_name):
+        return {'success': False, 'message': '文件夹名称无效'}, 400
+    
+    # 检查同一父文件夹下名称是否重复
+    existing = Folder.query.filter_by(parent_id=folder.parent_id, name=new_name, is_all_folder=False).first()
+    if existing and existing.id != folder_id:
+        return {'success': False, 'message': '该文件夹名称已存在'}, 400
+    
+    folder.name = new_name
+    db.session.commit()
+    
+    return {'success': True, 'message': '文件夹重命名成功'}
+
+@bp.route('/folder/move', methods=['POST'])
+@admin_required
+def move_folder():
+    """移动文件夹"""
+    folder_id = request.form.get('folder_id', type=int)
+    target_parent_id = request.form.get('target_parent_id', type=int)
+    
+    folder = Folder.query.get(folder_id)
+    if not folder or folder.is_all_folder:
+        return {'success': False, 'message': '文件夹不存在'}, 404
+    
+    # 检查是否可以移动
+    if not can_move_folder_to(folder, target_parent_id):
+        return {'success': False, 'message': '无法将文件夹移动到该位置，会造成循环引用'}, 400
+    
+    # 检查目标文件夹下名称是否重复
+    if Folder.query.filter_by(parent_id=target_parent_id, name=folder.name, is_all_folder=False).first():
+        return {'success': False, 'message': '目标位置已存在同名文件夹'}, 400
+    
+    folder.parent_id = target_parent_id
+    db.session.commit()
+    
+    return {'success': True, 'message': '文件夹移动成功'}
+
+@bp.route('/folder/delete', methods=['POST'])
+@admin_required
+def delete_folder():
+    """删除文件夹"""
+    folder_id = request.form.get('folder_id', type=int)
+    
+    folder = Folder.query.get(folder_id)
+    if not folder or folder.is_all_folder:
+        return {'success': False, 'message': '文件夹不存在'}, 404
+    
+    # 只删除文件夹关系，博客保留在"全部"中
+    # 删除所有子文件夹
+    def delete_subfolders(parent_id):
+        children = Folder.query.filter_by(parent_id=parent_id).all()
+        for child in children:
+            delete_subfolders(child.id)
+            db.session.delete(child)
+    
+    delete_subfolders(folder.id)
+    db.session.delete(folder)
+    db.session.commit()
+    
+    return {'success': True, 'message': '文件夹删除成功'}
+
+@bp.route('/post/move', methods=['POST'])
+@admin_required
+def move_post():
+    """移动文章"""
+    post_id = request.form.get('post_id', type=int)
+    target_folder_id = request.form.get('target_folder_id', type=int)
+    
+    post = Post.query.get(post_id)
+    if not post:
+        return {'success': False, 'message': '文章不存在'}, 404
+    
+    # 如果target_folder_id为None，则移动到"无"
+    post.folder_id = target_folder_id if target_folder_id else None
+    db.session.commit()
+    
+    return {'success': True, 'message': '文章移动成功'}
+
+@bp.route('/api/folder-tree')
+@admin_required
+def api_folder_tree():
+    """获取文件夹树API（用于选择位置弹窗）"""
+    folder_tree = get_folder_tree()
+    return {'success': True, 'tree': folder_tree}
+
+@bp.route('/api/full-folder-tree')
+def api_full_folder_tree():
+    """获取完整文件夹树API（用于首页显示）"""
+    def build_tree(parent_id=None):
+        folders = Folder.query.filter_by(parent_id=parent_id, is_all_folder=False).order_by(Folder.name).all()
+        tree = []
+        for folder in folders:
+            tree.append({
+                'id': folder.id,
+                'name': folder.name,
+                'children': build_tree(folder.id),
+                'posts': [{
+                    'id': p.id,
+                    'title': p.title,
+                    'slug': p.slug
+                } for p in folder.posts]
+            })
+        return tree
+    
+    # 获取不在任何文件夹中的文章
+    orphan_posts = Post.query.filter_by(folder_id=None).order_by(Post.created_date.desc()).all()
+    
+    folder_tree = build_tree()
+    return {
+        'success': True, 
+        'tree': folder_tree,
+        'orphan_posts': [{
+            'id': p.id,
+            'title': p.title,
+            'slug': p.slug
+        } for p in orphan_posts]
+    }

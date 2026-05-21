@@ -2,150 +2,425 @@
 {% block title %}首页 - VNDR{% endblock title %}
 {% block content %}
 <style>
-    /* 文章列表样式 */
+    /* 首页样式 - 类似VSCode */
+    .home-container {
+        display: flex;
+        height: calc(100vh - 120px);
+        gap: 1.5rem;
+    }
+    
+    /* 侧边栏 - 文件夹树 */
+    .sidebar {
+        width: 280px;
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: var(--shadow);
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+    
+    .sidebar-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--secondary-color);
+    }
+    
+    /* 树状结构 */
+    .tree {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .tree-item {
+        margin: 0.25rem 0;
+    }
+    
+    .tree-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.6rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    
+    .tree-header:hover {
+        background: var(--light-color);
+    }
+    
+    .tree-header.active {
+        background: #e3f2fd;
+        color: var(--primary-color);
+    }
+    
+    .tree-toggle {
+        width: 1rem;
+        height: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: transform 0.15s ease;
+        flex-shrink: 0;
+    }
+    
+    .tree-toggle.expanded {
+        transform: rotate(90deg);
+    }
+    
+    .tree-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1rem;
+    }
+    
+    .tree-name {
+        flex: 1;
+        font-size: 0.9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .tree-children {
+        list-style: none;
+        padding-left: 1.5rem;
+        margin: 0;
+        display: none;
+    }
+    
+    .tree-children.visible {
+        display: block;
+    }
+    
+    .tree-post {
+        color: var(--text-color);
+        text-decoration: none;
+    }
+    
+    .tree-post:hover {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    /* 主内容区 */
+    .main-content {
+        flex: 1;
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        overflow-y: auto;
+    }
+    
+    .content-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--gray);
+    }
+    
+    .content-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin: 0;
+    }
+    
+    .content-breadcrumb {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+    
+    /* 文章列表 */
     .post-list {
         list-style: none;
+        padding: 0;
+        margin: 0;
     }
     
     .post-item {
-        background-color: var(--white);
+        padding: 1.25rem;
+        border: 1px solid var(--gray);
         border-radius: var(--border-radius);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: var(--shadow);
-        transition: var(--transition);
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
     }
     
     .post-item:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
     }
     
-    .post-item h2 {
-        margin-top: 0;
-        margin-bottom: 0.5rem;
-        font-size: 1.3rem;
-        border-bottom: none;
+    .post-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
     }
     
-    .post-item h2 a {
+    .post-title a {
         color: var(--secondary-color);
         text-decoration: none;
     }
     
-    .post-item h2 a:hover {
+    .post-title a:hover {
         color: var(--primary-color);
     }
     
     .post-meta {
-        color: #777;
+        color: #666;
         font-size: 0.9rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
     }
     
     .post-summary {
-        margin-top: 1rem;
         color: var(--text-color);
+        line-height: 1.6;
     }
     
     .empty-state {
-        background-color: var(--white);
-        border-radius: var(--border-radius);
-        padding: 2rem;
         text-align: center;
-        box-shadow: var(--shadow);
+        padding: 3rem;
+        color: #666;
     }
     
-    /* 文件夹导航样式 */
-    .folder-nav {
-        background-color: var(--white);
-        border-radius: var(--border-radius);
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        box-shadow: var(--shadow);
-    }
-    
-    .folder-nav ul {
-        list-style: none;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-    
-    .folder-nav li {
-        margin: 0;
-    }
-    
-    .folder-nav a {
-        display: inline-block;
-        padding: 0.5rem 1rem;
-        border-radius: var(--border-radius);
-        background-color: var(--light-color);
-        color: var(--text-color);
-        text-decoration: none;
-        transition: var(--transition);
-    }
-    
-    .folder-nav a:hover {
-        background-color: var(--primary-color);
-        color: var(--white);
-    }
-    
-    .folder-nav a.active {
-        background-color: var(--primary-color);
-        color: var(--white);
+    /* 响应式 */
+    @media (max-width: 768px) {
+        .home-container {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .sidebar {
+            width: 100%;
+            max-height: 40vh;
+        }
     }
 </style>
-<h1>文章列表</h1>
 
-<!-- 文件夹导航 -->
-{% if folders %}
-    <div class="folder-nav">
-        <ul>
-            <li><a href="{{ url_for('main.index') }}" {% if not current_folder_id %}class="active"{% endif %}>全部</a></li>
-            {% for folder in folders %}
-                <li><a href="{{ url_for('main.index', folder=folder.id) }}" {% if current_folder_id == folder.id|string %}class="active"{% endif %}>{{ folder.name }}</a></li>
-            {% endfor %}
+<div class="home-container">
+    <!-- 侧边栏 - 文件夹树 -->
+    <div class="sidebar">
+        <div class="sidebar-title">目录结构</div>
+        <ul class="tree" id="folder-tree">
+            <!-- 由JavaScript动态填充 -->
         </ul>
     </div>
-{% endif %}
-{% if posts %}
-    <ul class="post-list">
-    {% for post in posts %}
-        <li class="post-item">
-            <h2><a href="{{ url_for('main.post', slug=post.slug) }}">{{ post.title }}</a></h2>
-            <div class="post-meta">
-                <span>{{ post.created_date.strftime('%Y-%m-%d') }}</span>
-                {% if post.folder %}<span>· {{ post.folder.name }}</span>{% endif %}
+    
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <div class="content-header">
+            <h1 class="content-title" id="current-title">全部文章</h1>
+            <div class="content-breadcrumb" id="current-breadcrumb">浏览所有文章</div>
+        </div>
+        
+        {% if posts %}
+            <ul class="post-list">
+                {% for post in posts %}
+                    <li class="post-item">
+                        <h2 class="post-title">
+                            <a href="{{ url_for('main.post', slug=post.slug) }}">{{ post.title }}</a>
+                        </h2>
+                        <div class="post-meta">
+                            <span>{{ post.created_date.strftime('%Y-%m-%d') }}</span>
+                            {% if post.folder %}
+                                <span>· {{ post.get_location() }}</span>
+                            {% endif %}
+                        </div>
+                        {% if post.summary %}
+                            <p class="post-summary">{{ post.summary }}</p>
+                        {% endif %}
+                        
+                        {% if session.get('admin_authenticated') %}
+                            <div style="margin-top: 1rem;">
+                                <a
+                                    href="{{ url_for('main.edit_post', slug=post.slug) }}"
+                                    style="margin-right: 1rem; color: var(--primary-color);"
+                                >编辑</a>
+                                <form
+                                    method="post"
+                                    action="{{ url_for('main.delete_post', slug=post.slug) }}"
+                                    style="display: inline;"
+                                    onsubmit="return confirm('确定删除这篇文章吗？');"
+                                >
+                                    <button type="submit" style="background: transparent; border: none; color: #c0392b; cursor: pointer;">
+                                        删除
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-state">
+                <p>还没有任何文章，<a href="{{ url_for('main.new_post') }}">点击新建</a>。</p>
             </div>
-            {% if post.summary %}
-                <p class="post-summary">{{ post.summary }}</p>
-            {% endif %}
-
-            {% if session.get('admin_authenticated') %}
-                <div style="margin-top: 1rem;">
-                    <a
-                        href="{{ url_for('main.edit_post', slug=post.slug) }}"
-                        style="margin-right: 1rem;"
-                    >编辑</a>
-                    <form
-                        method="post"
-                        action="{{ url_for('main.delete_post', slug=post.slug) }}"
-                        style="display: inline;"
-                        onsubmit="return confirm('确定删除这篇文章吗？');"
-                    >
-                        <button type="submit" style="background: transparent; border: none; color: #c0392b; cursor: pointer;">
-                            删除
-                        </button>
-                    </form>
-                </div>
-            {% endif %}
-        </li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <div class="empty-state">
-        <p>还没有任何文章，<a href="{{ url_for('main.new_post') }}">点击新建</a>。</p>
+        {% endif %}
     </div>
-{% endif %}
+</div>
+
+<script>
+    // 保存展开状态
+    const expandedFolders = new Set();
+    
+    // 加载文件夹树
+    async function loadFolderTree() {
+        try {
+            const response = await fetch('/api/full-folder-tree');
+            const data = await response.json();
+            
+            if (data.success) {
+                renderFolderTree(data.tree, data.orphan_posts);
+            }
+        } catch (error) {
+            console.error('Failed to load folder tree:', error);
+        }
+    }
+    
+    // 渲染文件夹树
+    function renderFolderTree(tree, orphanPosts) {
+        const container = document.getElementById('folder-tree');
+        container.innerHTML = '';
+        
+        // 添加"全部"
+        container.appendChild(createFolderItem({
+            id: 'all',
+            name: '全部',
+            isAll: true,
+            children: [],
+            posts: []
+        }, 0));
+        
+        // 添加文件夹
+        tree.forEach(folder => {
+            container.appendChild(createFolderItem(folder, 0));
+        });
+        
+        // 添加未分类文章
+        if (orphanPosts.length > 0) {
+            const orphanLi = document.createElement('li');
+            orphanLi.className = 'tree-item';
+            orphanLi.innerHTML = `
+                <div class="tree-header">
+                    <span class="tree-icon">📄</span>
+                    <span class="tree-name">未分类 (${orphanPosts.length})</span>
+                </div>
+                <ul class="tree-children visible">
+                    ${orphanPosts.map(post => `
+                        <li class="tree-item">
+                            <div class="tree-header">
+                                <span class="tree-icon">📄</span>
+                                <a href="/post/${post.slug}" class="tree-name tree-post">${post.title}</a>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            container.appendChild(orphanLi);
+        }
+    }
+    
+    // 创建文件夹项
+    function createFolderItem(folder, level) {
+        const li = document.createElement('li');
+        li.className = 'tree-item';
+        
+        const hasChildren = (folder.children && folder.children.length > 0) || 
+                           (folder.posts && folder.posts.length > 0);
+        
+        const isExpanded = expandedFolders.has(folder.id);
+        
+        li.innerHTML = `
+            <div class="tree-header" data-folder-id="${folder.id}" data-is-all="${folder.isAll || false}">
+                ${hasChildren ? `<span class="tree-toggle ${isExpanded ? 'expanded' : ''}">›</span>` : '<span class="tree-toggle" style="visibility: hidden;">›</span>'}
+                <span class="tree-icon">${folder.isAll ? '🏠' : '📁'}</span>
+                <span class="tree-name">${folder.name}</span>
+            </div>
+            ${hasChildren ? `
+                <ul class="tree-children ${isExpanded ? 'visible' : ''}">
+                    ${(folder.children || []).map(child => {
+                        const childLi = createFolderItem(child, level + 1);
+                        return childLi.outerHTML;
+                    }).join('')}
+                    ${(folder.posts || []).map(post => `
+                        <li class="tree-item">
+                            <div class="tree-header">
+                                <span class="tree-toggle" style="visibility: hidden;">›</span>
+                                <span class="tree-icon">📄</span>
+                                <a href="/post/${post.slug}" class="tree-name tree-post">${post.title}</a>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            ` : ''}
+        `;
+        
+        // 添加点击事件
+        const header = li.querySelector('.tree-header');
+        header.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tree-post') || e.target.tagName === 'A') {
+                return; // 点击文章链接不展开文件夹
+            }
+            
+            const folderId = header.dataset.folderId;
+            const isAll = header.dataset.isAll === 'true';
+            
+            if (hasChildren) {
+                toggleFolder(folderId, li);
+            }
+            
+            // 更新主内容区
+            updateMainContent(folderId, isAll);
+        });
+        
+        return li;
+    }
+    
+    // 切换文件夹展开/收起
+    function toggleFolder(folderId, li) {
+        const toggle = li.querySelector('.tree-toggle');
+        const children = li.querySelector('.tree-children');
+        
+        if (toggle && children) {
+            if (expandedFolders.has(folderId)) {
+                expandedFolders.delete(folderId);
+                toggle.classList.remove('expanded');
+                children.classList.remove('visible');
+            } else {
+                expandedFolders.add(folderId);
+                toggle.classList.add('expanded');
+                children.classList.add('visible');
+            }
+        }
+    }
+    
+    // 更新主内容区
+    function updateMainContent(folderId, isAll) {
+        if (isAll) {
+            window.location.href = '/';
+        } else {
+            window.location.href = `/?folder=${folderId}`;
+        }
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFolderTree();
+        
+        // 高亮当前文件夹
+        const currentFolderId = '{{ current_folder_id }}';
+        if (currentFolderId) {
+            expandedFolders.add(currentFolderId);
+        }
+    });
+</script>
 {% endblock content %}

@@ -4,11 +4,26 @@ from datetime import datetime
 class Folder(db.Model):
     """文件夹模型"""
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)  # 文件夹名称
+    name = db.Column(db.String(50), nullable=False)  # 文件夹名称
+    parent_id = db.Column(db.Integer, db.ForeignKey('folder.id'), nullable=True)  # 父文件夹ID
+    created_date = db.Column(db.DateTime, default=datetime.utcnow)  # 创建日期
+    is_all_folder = db.Column(db.Boolean, default=False)  # 是否是"全部"文件夹
+    
+    # 自引用关系
+    parent = db.relationship('Folder', remote_side=[id], backref=db.backref('children', lazy=True))
     posts = db.relationship('Post', backref='folder', lazy=True)  # 关联的文章
 
     def __repr__(self):
         return f'<Folder {self.name}>'
+    
+    def get_path(self):
+        """获取文件夹路径"""
+        path = []
+        current = self
+        while current and not current.is_all_folder:
+            path.insert(0, current.name)
+            current = current.parent
+        return '/'.join(path) if path else '无'
 
 class Post(db.Model):
     """文章元数据模型"""
@@ -24,6 +39,12 @@ class Post(db.Model):
 
     def __repr__(self):
         return f'<Post {self.title}>'
+    
+    def get_location(self):
+        """获取文章归属路径"""
+        if self.folder:
+            return self.folder.get_path()
+        return '无'
 
 class Comment(db.Model):
     """评论模型"""

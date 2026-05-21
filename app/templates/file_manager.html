@@ -1,0 +1,949 @@
+{% extends "base.html" %}
+
+{% block title %}文件管理器 - VNDR{% endblock %}
+
+{% block content %}
+<style>
+    /* 文件管理器特定样式 */
+    .file-manager-container {
+        display: flex;
+        height: calc(100vh - 120px);
+        gap: 20px;
+    }
+    
+    .sidebar {
+        width: 250px;
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+    
+    .main-content {
+        flex: 1;
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .breadcrumb {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 14px;
+    }
+    
+    .breadcrumb a {
+        color: #3498db;
+        text-decoration: none;
+    }
+    
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+    
+    .breadcrumb span {
+        color: #666;
+    }
+    
+    .search-box {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .search-box input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 250px;
+    }
+    
+    .search-box button {
+        padding: 8px 16px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .search-box button:hover {
+        background: #2980b9;
+    }
+    
+    .folder-tree {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .folder-tree-item {
+        margin: 5px 0;
+    }
+    
+    .folder-tree-toggle {
+        width: 1rem;
+        height: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: transform 0.15s ease;
+        flex-shrink: 0;
+    }
+    
+    .folder-tree-toggle.expanded {
+        transform: rotate(90deg);
+    }
+    
+    .folder-tree-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        text-decoration: none;
+        color: #333;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .folder-tree-link:hover,
+    .folder-tree-link.active {
+        background: #f0f7ff;
+        color: #3498db;
+    }
+    
+    .folder-tree-children {
+        margin-left: 20px;
+        list-style: none;
+        padding: 0;
+        display: none;
+    }
+    
+    .folder-tree-children.visible {
+        display: block;
+    }
+    
+    .folder-tree-icon {
+        font-size: 16px;
+    }
+    
+    .folder-tree-children {
+        margin-left: 20px;
+        list-style: none;
+        padding: 0;
+    }
+    
+    .file-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .file-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .file-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .file-icon {
+        font-size: 24px;
+        margin-right: 15px;
+    }
+    
+    .file-info {
+        flex: 1;
+    }
+    
+    .file-name {
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+    
+    .file-meta {
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .file-actions {
+        display: none;
+        gap: 8px;
+    }
+    
+    .file-item:hover .file-actions {
+        display: flex;
+    }
+    
+    .action-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        color: #333;
+        text-decoration: none;
+    }
+    
+    .action-btn:hover {
+        background: #f0f0f0;
+    }
+    
+    .action-btn.delete {
+        color: #e74c3c;
+        border-color: #e74c3c;
+    }
+    
+    .action-btn.delete:hover {
+        background: #fdf0f0;
+    }
+    
+    .new-folder-btn {
+        padding: 8px 16px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .new-folder-btn:hover {
+        background: #219a52;
+    }
+    
+    /* 弹窗样式 */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-overlay.show {
+        display: flex;
+    }
+    
+    .modal {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        width: 400px;
+        max-width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .modal h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    
+    .modal-form-group {
+        margin-bottom: 15px;
+    }
+    
+    .modal-form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    
+    .modal-form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    
+    .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .modal-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .modal-btn.cancel {
+        background: #ecf0f1;
+        color: #333;
+    }
+    
+    .modal-btn.confirm {
+        background: #3498db;
+        color: white;
+    }
+    
+    .modal-btn.confirm.danger {
+        background: #e74c3c;
+    }
+    
+    /* 文件夹选择树 */
+    .folder-select-tree {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .folder-select-item {
+        padding: 8px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .folder-select-item:hover,
+    .folder-select-item.selected {
+        background: #f0f7ff;
+    }
+    
+    .folder-select-children {
+        margin-left: 20px;
+        list-style: none;
+        padding: 0;
+    }
+    
+    .none-option {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .none-option:hover,
+    .none-option.selected {
+        background: #e9ecef;
+    }
+    
+    .location-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #e3f2fd;
+        color: #1976d2;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+</style>
+
+<div class="file-manager-container">
+    <!-- 侧边栏：文件夹树 -->
+    <div class="sidebar">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 16px;">文件夹</h3>
+        
+        <div class="folder-tree-item">
+            <a href="{{ url_for('main.file_manager') }}" 
+               class="folder-tree-link {% if not current_folder %}active{% endif %}">
+                <span class="folder-tree-icon">📁</span>
+                <span>全部</span>
+            </a>
+        </div>
+        
+        <ul class="folder-tree" id="sidebar-folder-tree">
+            {% macro render_folder_tree(folders, level=0) %}
+                {% for folder in folders %}
+                    <li class="folder-tree-item" data-folder-id="{{ folder.id }}">
+                        <div class="folder-tree-link {% if current_folder and current_folder.id == folder.id %}active{% endif %}" style="cursor: pointer;">
+                            {% if folder.children %}
+                                <span class="folder-tree-toggle">›</span>
+                            {% else %}
+                                <span class="folder-tree-toggle" style="visibility: hidden;">›</span>
+                            {% endif %}
+                            <span class="folder-tree-icon">📁</span>
+                            <span>{{ folder.name }}</span>
+                        </div>
+                        {% if folder.children %}
+                            <ul class="folder-tree-children">
+                                {{ render_folder_tree(folder.children) }}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            {% endmacro %}
+            {{ render_folder_tree(folder_tree) }}
+        </ul>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <div class="breadcrumb">
+                <a href="{{ url_for('main.file_manager') }}">全部</a>
+                {% for crumb in breadcrumbs %}
+                    <span>›</span>
+                    <a href="{{ url_for('main.file_manager', folder_id=crumb.id) }}">{{ crumb.name }}</a>
+                {% endfor %}
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="search-box">
+                    <form method="GET" action="{{ url_for('main.file_manager') }}">
+                        <input type="text" name="search" placeholder="搜索文章..." 
+                               value="{{ search_query }}" style="width: 200px;">
+                        {% if current_folder %}
+                            <input type="hidden" name="folder_id" value="{{ current_folder.id }}">
+                        {% endif %}
+                        <button type="submit">搜索</button>
+                    </form>
+                </div>
+                
+                {% if not search_query %}
+                    <button class="new-folder-btn" onclick="showCreateFolderModal()">
+                        <span>+</span> 新建文件夹
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 文件列表 -->
+        <div class="file-list">
+            {% if search_query %}
+                <p style="color: #666; margin-bottom: 15px;">搜索结果："{{ search_query }}"</p>
+            {% endif %}
+            
+            <!-- 文件夹 -->
+            {% for folder in folders %}
+                <div class="file-item" 
+                     onclick="navigateToFolder({{ folder.id }})"
+                     oncontextmenu="showFolderContextMenu(event, {{ folder.id }}, '{{ folder.name }}'); return false;">
+                    <span class="file-icon">📁</span>
+                    <div class="file-info">
+                        <div class="file-name">{{ folder.name }}</div>
+                        <div class="file-meta">{{ folder.children|length + folder.posts|length }} 项</div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="action-btn" onclick="event.stopPropagation(); showRenameFolderModal({{ folder.id }}, '{{ folder.name }}')">重命名</button>
+                        <button class="action-btn" onclick="event.stopPropagation(); showMoveFolderModal({{ folder.id }})">移动</button>
+                        <button class="action-btn delete" onclick="event.stopPropagation(); showDeleteFolderModal({{ folder.id }}, '{{ folder.name }}')">删除</button>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- 文章 -->
+            {% for post in posts %}
+                <div class="file-item"
+                     onclick="window.location.href='{{ url_for('main.post', slug=post.slug) }}'"
+                     oncontextmenu="showPostContextMenu(event, {{ post.id }}, '{{ post.title }}'); return false;">
+                    <span class="file-icon">📄</span>
+                    <div class="file-info">
+                        <div class="file-name">
+                            {{ post.title }}
+                            {% if post.get_location() != '无' %}
+                                <span class="location-tag">{{ post.get_location() }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="file-meta">
+                            创建于 {{ post.created_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% if post.modified_date and post.modified_date > post.created_date %}
+                                | 更新于 {{ post.modified_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <a href="{{ url_for('main.edit_post', slug=post.slug) }}" 
+                           class="action-btn" 
+                           onclick="event.stopPropagation();">编辑</a>
+                        <button class="action-btn" onclick="event.stopPropagation(); showMovePostModal({{ post.id }}, '{{ post.title }}')">移动</button>
+                        <form method="POST" action="{{ url_for('main.delete_post', slug=post.slug) }}" 
+                              onsubmit="event.stopPropagation(); return confirm('确定删除这篇文章？');" 
+                              style="display: inline;">
+                            <button type="submit" class="action-btn delete">删除</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            {% if not folders and not posts %}
+                <div style="text-align: center; padding: 50px; color: #666;">
+                    {% if search_query %}
+                        <p>没有找到相关文章</p>
+                    {% else %}
+                        <p>该文件夹为空</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 创建文件夹弹窗 -->
+<div id="createFolderModal" class="modal-overlay">
+    <div class="modal">
+        <h3>新建文件夹</h3>
+        <div class="modal-form-group">
+            <label>文件夹名称</label>
+            <input type="text" id="newFolderName" placeholder="请输入文件夹名称">
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="hideModal('createFolderModal')">取消</button>
+            <button class="modal-btn confirm" onclick="createFolder()">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重命名文件夹弹窗 -->
+<div id="renameFolderModal" class="modal-overlay">
+    <div class="modal">
+        <h3>重命名文件夹</h3>
+        <input type="hidden" id="renameFolderId">
+        <div class="modal-form-group">
+            <label>新名称</label>
+            <input type="text" id="renameFolderName" placeholder="请输入新名称">
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="hideModal('renameFolderModal')">取消</button>
+            <button class="modal-btn confirm" onclick="renameFolder()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除文件夹弹窗 -->
+<div id="deleteFolderModal" class="modal-overlay">
+    <div class="modal">
+        <h3>删除文件夹</h3>
+        <input type="hidden" id="deleteFolderId">
+        <p>确定要删除文件夹 "<span id="deleteFolderName"></span>" 吗？</p>
+        <p style="color: #666; font-size: 14px;">文件夹中的文章将保留在"全部"中。</p>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="hideModal('deleteFolderModal')">取消</button>
+            <button class="modal-btn confirm danger" onclick="deleteFolder()">删除</button>
+        </div>
+    </div>
+</div>
+
+<!-- 移动文件夹弹窗 -->
+<div id="moveFolderModal" class="modal-overlay">
+    <div class="modal">
+        <h3>移动文件夹</h3>
+        <input type="hidden" id="moveFolderId">
+        <p>选择目标位置：</p>
+        <div class="none-option" onclick="selectFolderTarget(null)" id="folderTargetNone">
+            <span>📁</span>
+            <span>无（根目录）</span>
+        </div>
+        <ul class="folder-select-tree" id="folderSelectTree">
+        </ul>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="hideModal('moveFolderModal')">取消</button>
+            <button class="modal-btn confirm" onclick="moveFolder()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 移动文章弹窗 -->
+<div id="movePostModal" class="modal-overlay">
+    <div class="modal">
+        <h3>移动文章</h3>
+        <input type="hidden" id="movePostId">
+        <p>选择目标文件夹：</p>
+        <div class="none-option" onclick="selectPostTarget(null)" id="postTargetNone">
+            <span>📁</span>
+            <span>无</span>
+        </div>
+        <ul class="folder-select-tree" id="postSelectTree">
+        </ul>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="hideModal('movePostModal')">取消</button>
+            <button class="modal-btn confirm" onclick="movePost()">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 当前选中的目标文件夹
+    let selectedFolderTarget = null;
+    let selectedPostTarget = null;
+    
+    // 保存侧边栏展开状态
+    const sidebarExpandedFolders = new Set();
+    
+    // 初始化侧边栏
+    function initSidebar() {
+        const items = document.querySelectorAll('#sidebar-folder-tree .folder-tree-item');
+        
+        items.forEach(item => {
+            const link = item.querySelector('.folder-tree-link');
+            const toggle = item.querySelector('.folder-tree-toggle');
+            const children = item.querySelector('.folder-tree-children');
+            const folderId = item.dataset.folderId;
+            
+            // 点击链接时导航
+            link.addEventListener('click', () => {
+                navigateToFolder(folderId);
+            });
+            
+            // 如果有子文件夹，添加展开/收起功能
+            if (children && toggle) {
+                toggle.style.cursor = 'pointer';
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleSidebarFolder(folderId, item);
+                });
+                
+                // 点击文件夹也可以展开/收起
+                link.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    toggleSidebarFolder(folderId, item);
+                });
+                
+                // 如果当前文件夹或子文件夹被选中，自动展开
+                {% if current_folder %}
+                    let temp = {{ current_folder.id }};
+                    let parent = {{ current_folder.parent_id or 'null' }};
+                    let shouldExpand = false;
+                    
+                    // 检查是否需要展开
+                    if (temp == folderId) shouldExpand = true;
+                    if (parent && parent == folderId) shouldExpand = true;
+                    
+                    if (shouldExpand) {
+                        sidebarExpandedFolders.add(folderId);
+                        toggle.classList.add('expanded');
+                        children.classList.add('visible');
+                    }
+                {% endif %}
+            }
+        });
+    }
+    
+    // 切换侧边栏文件夹展开/收起
+    function toggleSidebarFolder(folderId, item) {
+        const toggle = item.querySelector('.folder-tree-toggle');
+        const children = item.querySelector('.folder-tree-children');
+        
+        if (toggle && children) {
+            if (sidebarExpandedFolders.has(folderId)) {
+                sidebarExpandedFolders.delete(folderId);
+                toggle.classList.remove('expanded');
+                children.classList.remove('visible');
+            } else {
+                sidebarExpandedFolders.add(folderId);
+                toggle.classList.add('expanded');
+                children.classList.add('visible');
+            }
+        }
+    }
+    
+    // 导航到文件夹
+    function navigateToFolder(folderId) {
+        window.location.href = '{{ url_for("main.file_manager") }}?folder_id=' + folderId;
+    }
+    
+    // 显示创建文件夹弹窗
+    function showCreateFolderModal() {
+        document.getElementById('newFolderName').value = '';
+        showModal('createFolderModal');
+    }
+    
+    // 创建文件夹
+    function createFolder() {
+        const name = document.getElementById('newFolderName').value.trim();
+        if (!name) {
+            alert('请输入文件夹名称');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('name', name);
+        {% if current_folder %}
+            formData.append('parent_id', {{ current_folder.id }});
+        {% endif %}
+        
+        fetch('{{ url_for("main.create_folder") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+    
+    // 显示重命名文件夹弹窗
+    function showRenameFolderModal(folderId, currentName) {
+        document.getElementById('renameFolderId').value = folderId;
+        document.getElementById('renameFolderName').value = currentName;
+        showModal('renameFolderModal');
+    }
+    
+    // 重命名文件夹
+    function renameFolder() {
+        const folderId = document.getElementById('renameFolderId').value;
+        const name = document.getElementById('renameFolderName').value.trim();
+        
+        if (!name) {
+            alert('请输入文件夹名称');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('folder_id', folderId);
+        formData.append('name', name);
+        
+        fetch('{{ url_for("main.rename_folder") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+    
+    // 显示删除文件夹弹窗
+    function showDeleteFolderModal(folderId, name) {
+        document.getElementById('deleteFolderId').value = folderId;
+        document.getElementById('deleteFolderName').textContent = name;
+        showModal('deleteFolderModal');
+    }
+    
+    // 删除文件夹
+    function deleteFolder() {
+        const folderId = document.getElementById('deleteFolderId').value;
+        
+        const formData = new FormData();
+        formData.append('folder_id', folderId);
+        
+        fetch('{{ url_for("main.delete_folder") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+    
+    // 显示移动文件夹弹窗
+    function showMoveFolderModal(folderId) {
+        document.getElementById('moveFolderId').value = folderId;
+        selectedFolderTarget = null;
+        loadFolderMoveTree();
+        showModal('moveFolderModal');
+    }
+    
+    // 显示移动文章弹窗
+    function showMovePostModal(postId, title) {
+        document.getElementById('movePostId').value = postId;
+        selectedPostTarget = null;
+        loadPostMoveTree();
+        showModal('movePostModal');
+    }
+    
+    // 加载文件夹选择树（用于移动文件夹）
+    function loadFolderMoveTree() {
+        fetch('{{ url_for("main.api_folder_tree") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('folderSelectTree');
+                container.innerHTML = renderFolderTree(data.tree, true, 'selectFolderTarget');
+            }
+        });
+    }
+    
+    // 加载文件夹选择树（用于移动文章）
+    function loadPostMoveTree() {
+        fetch('{{ url_for("main.api_folder_tree") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('postSelectTree');
+                container.innerHTML = renderFolderTree(data.tree, false, 'selectPostTarget');
+            }
+        });
+    }
+    
+    // 渲染文件夹选择树
+    function renderFolderTree(tree, excludeCurrentFolder, onClickFunc) {
+        let html = '';
+        {% set current_id = current_folder.id if current_folder else 0 %}
+        for (let folder of tree) {
+            if (excludeCurrentFolder && folder.id == {{ current_id }}) {
+                continue; // 跳过当前文件夹
+            }
+            html += `<li class="folder-select-item" 
+                          onclick="${onClickFunc}(${folder.id})"
+                          data-folder-id="${folder.id}">
+                        <span>📁</span>
+                        <span>${folder.name}</span>
+                     </li>`;
+            if (folder.children && folder.children.length > 0) {
+                html += `<ul class="folder-select-children">${renderFolderTree(folder.children, excludeCurrentFolder, onClickFunc)}</ul>`;
+            }
+        }
+        return html;
+    }
+    
+    // 选择文件夹目标
+    function selectFolderTarget(folderId) {
+        selectedFolderTarget = folderId;
+        
+        // 更新UI
+        document.querySelectorAll('#moveFolderModal .folder-select-item, #moveFolderModal .none-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        if (folderId === null) {
+            document.getElementById('folderTargetNone').classList.add('selected');
+        } else {
+            const target = document.querySelector(`#moveFolderModal [data-folder-id="${folderId}"]`);
+            if (target) target.classList.add('selected');
+        }
+    }
+    
+    // 选择文章目标
+    function selectPostTarget(folderId) {
+        selectedPostTarget = folderId;
+        
+        // 更新UI
+        document.querySelectorAll('#movePostModal .folder-select-item, #movePostModal .none-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        if (folderId === null) {
+            document.getElementById('postTargetNone').classList.add('selected');
+        } else {
+            const target = document.querySelector(`#movePostModal [data-folder-id="${folderId}"]`);
+            if (target) target.classList.add('selected');
+        }
+    }
+    
+    // 移动文件夹
+    function moveFolder() {
+        const folderId = document.getElementById('moveFolderId').value;
+        
+        const formData = new FormData();
+        formData.append('folder_id', folderId);
+        if (selectedFolderTarget !== null) {
+            formData.append('target_parent_id', selectedFolderTarget);
+        }
+        
+        fetch('{{ url_for("main.move_folder") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+    
+    // 移动文章
+    function movePost() {
+        const postId = document.getElementById('movePostId').value;
+        
+        const formData = new FormData();
+        formData.append('post_id', postId);
+        if (selectedPostTarget !== null) {
+            formData.append('target_folder_id', selectedPostTarget);
+        }
+        
+        fetch('{{ url_for("main.move_post") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+    
+    // 显示/隐藏弹窗
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.add('show');
+    }
+    
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+    }
+    
+    // 点击弹窗外部关闭
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('show');
+            }
+        });
+    });
+    
+    // 简单的右键菜单（这里简化处理，直接显示弹窗）
+    function showFolderContextMenu(event, folderId, name) {
+        // 暂时直接显示重命名弹窗
+        // 实际可以实现更复杂的右键菜单
+        showRenameFolderModal(folderId, name);
+    }
+    
+    function showPostContextMenu(event, postId, title) {
+        showMovePostModal(postId, title);
+    }
+    
+    // 页面加载后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        initSidebar();
+    });
+</script>
+{% endblock %}

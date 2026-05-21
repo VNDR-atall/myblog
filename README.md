@@ -5,13 +5,11 @@
 ## 功能概览
 
 ### 游客功能
-
-- 文章列表：`/`
+- 文章列表（树状目录浏览）：`/`
 - 文章详情：`/post/<slug>`
-- 文件夹分类浏览：`/folder/<folder_id>`
+- 文件夹分类浏览（树状结构）
 
 ### 用户功能
-
 - 注册：`/register`
 - 登录：`/login`
 - 个人管理：`/user/profile`
@@ -23,15 +21,18 @@
 - 评论功能：在文章详情页发表评论
 
 ### 管理员功能
-
 - 登录/退出：`/admin/login`、`/logout`
+- 文件管理器：`/file-manager`
+  - 创建、重命名、移动、删除文件夹
+  - 支持无限嵌套文件夹
+  - 移动文章到不同文件夹
+  - 搜索文章
 - 新建文章：`/new`
 - 编辑文章：`/edit/<slug>`
 - 删除文章：`/delete/<slug>`
 - 图片上传：在新建/编辑文章时上传图片
 
 ### Markdown 能力
-
 - 代码高亮、表格、TOC、fenced code
 - 支持 Obsidian 风格的任务列表：`- [ ] 待办事项`、`- [x] 已完成事项`
 - 支持 Obsidian 风格的文本高亮：`==高亮文本==`
@@ -39,7 +40,6 @@
 - 自动换行转换
 
 ## 技术栈
-
 - 后端框架：`Flask`
 - 数据库：`SQLite` + `Flask-SQLAlchemy`
 - 迁移扩展：`Flask-Migrate`（已接入扩展，当前未使用迁移目录）
@@ -49,16 +49,20 @@
 - 容器化：`Docker` + `docker compose`
 
 ## 项目结构
-
 ```text
 myblog/
 ├── app/
 │   ├── __init__.py              # 应用工厂、扩展初始化、404/500 错误页处理
-│   ├── routes.py                # 主要路由（浏览、登录、CRUD、上传）
+│   ├── routes.py                # 主要路由（浏览、登录、CRUD、上传、文件管理）
 │   ├── models.py                # Post、Folder、Comment 模型
 │   ├── decorators.py            # admin_required 权限装饰器
 │   ├── utils.py                 # Markdown 渲染、上传、slug 生成工具
 │   ├── templates/               # 页面模板
+│   │   ├── base.html            # 基础模板
+│   │   ├── index.html           # 首页（树状目录）
+│   │   ├── post.html            # 文章详情页
+│   │   ├── file_manager.html    # 文件管理器
+│   │   └── ...
 │   └── static/images/           # 上传图片目录
 │       └── avatars/             # 用户头像目录
 ├── content/posts/               # 文章正文（Markdown 文件）
@@ -74,16 +78,38 @@ myblog/
 ```
 
 ## 数据设计与内容存储
-
 - 数据库表 `Post` 保存文章元数据：`title`、`slug`、`created_date`、`modified_date`、`summary`、`filename`、`folder_id`
-- 数据库表 `Folder` 保存文件夹信息：`name`
-- 数据库表 `Comment` 保存评论信息：`content`、`username`、`post_id`、`created_date`
+- 数据库表 `Folder` 保存文件夹信息：`name`、`parent_id`（支持嵌套）、`is_all_folder`
+  - 文件夹支持无限嵌套
+  - "全部"文件夹是特殊的只读文件夹，包含所有文章
+- 数据库表 `Comment` 保存评论信息：`content`、`username`、`avatar`、`post_id`、`created_date`
 - 文章正文不直接入库，而是存放在 `content/posts/<filename>.md`
 - 创建文章时，后端会根据标题自动生成唯一 `slug` 与 `filename`
 - 编辑文章时不会修改 `created_date`
 
-## 一键启动脚本
+## 文件夹管理系统
+### "全部"文件夹
+- 始终存在且不可删除、不可修改
+- 包含所有文章，无论它们归属哪个文件夹
+- 是只读文件夹，不能在其中创建子文件夹
 
+### 文件夹操作
+- **创建**：可以在任意文件夹下创建子文件夹
+- **重命名**：可以重命名文件夹（遵循命名规则）
+- **移动**：可以移动文件夹到任意位置（防止循环引用）
+- **删除**：删除文件夹时，其中的文章保留在"全部"中
+
+### 文章归属
+- 每篇文章可以属于一个文件夹或"无"（不归属于任何文件夹）
+- 文章在"全部"中始终可见
+- 文章详情页显示归属路径（如 "项目/人工智能/RAG"）
+
+### 命名规则
+- 支持中文、英文、数字、下划线、短横线
+- 长度 1-50 个字符
+- 同一父文件夹下名称唯一
+
+## 一键启动脚本
 项目根目录提供 `start.sh`，支持本地与 Docker 两种启动方式。
 
 ```bash
@@ -91,13 +117,10 @@ bash start.sh [local|docker|docker-detached|docker-down]
 ```
 
 ### `local`（默认）
-
 ```bash
 bash start.sh
 ```
-
 脚本会自动执行：
-
 1. 创建虚拟环境（默认 `.venv`）
 2. 安装依赖（`pip install -r requirements.txt`）
 3. 创建必要目录（`content/posts`、`app/static/images`、`app/static/images/avatars`）
@@ -105,38 +128,30 @@ bash start.sh
 5. 启动开发服务（`python run.py`）
 
 可选环境变量：
-
 - `VENV_DIR`：虚拟环境目录（默认 `.venv`）
 - `PYTHON_BIN`：Python 命令（默认 `python3`）
 
 ### `docker`
-
 ```bash
 bash start.sh docker
 ```
-
 前台启动（可实时看日志）。
 
 ### `docker-detached`
-
 ```bash
 bash start.sh docker-detached
 ```
-
 后台启动。
 
 ### `docker-down`
-
 ```bash
 bash start.sh docker-down
 ```
-
 停止容器服务。
 
 ## 手动启动（不使用脚本）
 
 ### 本地
-
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -147,20 +162,19 @@ python run.py
 ```
 
 ### 本地测试数据库
-
 ```bash
 python init_test_db.py
 ```
 
 测试数据库包含：
-
+- "全部"文件夹（系统自动创建）
 - 3个默认文件夹：欢迎、日常、项目
+- 嵌套文件夹示例
 - 3篇测试文章
 - 3条测试评论
 - 2个测试用户：testuser1、testuser2
 
 ### Docker
-
 ```bash
 docker compose up --build
 ```
@@ -168,21 +182,17 @@ docker compose up --build
 访问：`http://localhost:5000`
 
 ## 管理员账号
-
-默认管理员账号来自 `config.py`：
-
+默认管理员账号来自 [config.py](file:///Users/vd/projects/myblog/config.py)：
 - `ADMIN_USERNAME=adminVD`
 - `ADMIN_PASSWORD=@Wtdlxwsmlm329`
 
 建议生产环境通过环境变量覆盖：
-
 ```bash
 export ADMIN_USERNAME="your_admin"
 export ADMIN_PASSWORD="strong_password"
 ```
 
 ## 用户注册与登录
-
 - 注册时需要输入用户名、密码、确认密码
 - 用户名长度限制：2-8个字符
 - 密码长度限制：6-20个字符
@@ -191,14 +201,12 @@ export ADMIN_PASSWORD="strong_password"
 - 登录时若账户不存在，会提示并提供注册链接
 
 ## 头像上传说明
-
 - 用户注册和个人管理页面均可上传头像
 - 支持格式：`jpg`、`png`
 - 大小限制：2MB
 - 未上传头像时显示默认头像（用户名首字母）
 
 ## 图片上传说明
-
 - 上传接口：`POST /upload`（管理员权限）
 - 前端页面（`/new`、`/edit/<slug>`）已集成上传按钮
 - 成功后返回 `{ "location": "/static/images/<filename>" }`
@@ -207,16 +215,44 @@ export ADMIN_PASSWORD="strong_password"
 允许上传扩展名：`png`、`jpg`、`jpeg`、`gif`、`svg`
 
 ## 评论功能
-
 - 只有登录用户才能发表评论
 - 评论字数限制：2-100字
 - 评论显示用户头像、用户名、评论内容和时间
 - 用户可以在个人管理页面查看和删除自己的评论
 
+## Docker 部署工作流程
+
+### 本地开发与 Docker 封装
+1. 在本地 Mac 上进行功能开发
+2. 本地测试功能（使用 `python run.py` 或 `init_test_db.py`）
+3. 构建 Docker 镜像：`docker compose build`
+4. 本地 Docker 测试：`docker compose up`
+5. 推送到 Docker Hub（可选）或使用 `docker save` 传输镜像
+
+### 云服务器部署（Ubuntu）
+1. 服务器准备：
+   ```bash
+   # 安装 Docker 和 Docker Compose
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install docker.io docker-compose -y
+   sudo usermod -aG docker $USER  # 重新登录使生效
+   ```
+
+2. 上传代码或拉取镜像到服务器
+3. 启动服务：
+   ```bash
+   docker compose up -d
+   ```
+
+4. 配置 Nginx 反向代理（推荐）和 HTTPS（Let's Encrypt）
+
+### 注意事项
+- 使用 `.env` 文件管理环境变量
+- 确保 `content/posts` 和 `app/static/images` 数据持久化
+- 定期备份数据库和上传的文件
+
 ## 线上部署建议（公网）
-
 在云服务器与域名可用后，推荐：
-
 1. 使用 `gunicorn + nginx`（或仅 gunicorn + 反向代理）
 2. 配置 HTTPS（Let's Encrypt）
 3. 将 `SECRET_KEY`、管理员密码改为强随机值
@@ -224,8 +260,7 @@ export ADMIN_PASSWORD="strong_password"
 5. 观察应用日志，重点关注 4xx/5xx 与上传失败场景
 
 ## 已知注意事项
-
 - Markdown 渲染结果使用 `|safe` 输出，若面向公网建议引入 HTML 清洗策略
 - 当前数据库为 SQLite，单机场景可用；并发写入较高时建议迁移至 MySQL/PostgreSQL
 - 测试数据库 `test.db` 已添加到 `.gitignore`，不会被 git 推送
-
+- 测试文章 `content/posts/test*.md` 建议也添加到 `.gitignore`（如不需要）
